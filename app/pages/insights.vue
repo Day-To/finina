@@ -33,7 +33,9 @@ const C = { income: 'var(--auto)', expenses: 'var(--negative)', surplus: 'var(--
 // ── Aggregates ────────────────────────────────────────────────────────────────
 const series = computed(() => monthlySeries(months.value))
 const kpis = computed(() => analyticsKpis(series.value))
-const expenseCats = computed(() => expenseCategories(months.value, 8))
+// Exclude daily-budget variable lines — they mirror the daily spending pool
+// (charted separately below) and would otherwise always top the ranking.
+const expenseCats = computed(() => expenseCategories(months.value, 8, { excludeDailyBudget: true }))
 const fixedVar = computed(() => fixedVsVariable(months.value))
 const surplusAlloc = computed(() => surplusAllocationSeries(months.value))
 const invSeries = computed(() => investmentSeries(months.value))
@@ -63,6 +65,9 @@ const cumulativeData = computed(() => invSeries.value.map((s) => ({ label: short
 const cumulativeSeries = [{ name: 'Invested to date', color: C.invest, area: true }]
 const investedPerMonthData = computed(() => invSeries.value.map((s) => ({ label: short(s.month), values: [s.mf, s.stocks] })))
 const investedPerMonthSeries = [{ name: 'Mutual funds', color: C.invest }, { name: 'Stocks', color: C.stocks }]
+// Investing rate = share of income put into investments, month on month.
+const investRateData = computed(() => series.value.map((s) => ({ label: short(s.month), values: [s.investRate] })))
+const investRateSeries = [{ name: 'Investing rate', color: C.invest, area: true }]
 const typeSlices = computed(() => [{ label: 'Mutual funds', value: invType.value.mf, color: C.invest }, { label: 'Stocks', value: invType.value.stocks, color: C.stocks }])
 const bucketSlices = computed(() => invBucket.value.map((b, i) => ({ label: b.bucket, value: b.amount, color: PALETTE[i % PALETTE.length] })))
 const hasInvest = computed(() => invType.value.total > 0)
@@ -220,6 +225,7 @@ const toneClass = { positive: 'text-positive', negative: 'text-negative', muted:
             <div><p class="mb-3 text-sm font-medium text-muted-foreground">By goal / bucket</p><ChartDonut :slices="bucketSlices" :currency="cur" center-label="Routed" /></div>
           </div>
           <div><p class="mb-3 text-sm font-medium text-muted-foreground">Invested each month</p><ChartBar :data="investedPerMonthData" :series="investedPerMonthSeries" stacked :currency="cur" :format-axis="compact" /></div>
+          <div><p class="mb-1 text-sm font-medium text-muted-foreground">Investing rate</p><p class="mb-3 text-xs text-muted-foreground">Share of income invested, month by month — overall {{ Math.round(kpis.investedShareOfIncome * 100) }}%.</p><ChartLine :data="investRateData" :series="investRateSeries" pct /></div>
         </UiCardContent>
       </UiCard>
 

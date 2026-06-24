@@ -33,6 +33,7 @@ describe('monthlySeries', () => {
     expect(s.map((x) => x.month)).toEqual(['2026-05', '2026-06'])
     expect(s[0]).toMatchObject({ income: 14000000, expenses: 7000000, fixed: 5000000, variable: 2000000, surplus: 7000000, mf: 3500000, stocks: 0, invested: 3500000 })
     expect(s[0].savingsRate).toBeCloseTo(0.5)
+    expect(s[0].investRate).toBeCloseTo(3500000 / 14000000)
     expect(s[1]).toMatchObject({ expenses: 8000000, mf: 2800000, stocks: 700000, invested: 3500000 })
   })
 })
@@ -46,6 +47,11 @@ describe('expenseCategories / fixedVsVariable', () => {
   })
   it('splits fixed vs variable totals', () => {
     expect(fixedVsVariable(M)).toEqual({ fixed: 10000000, variable: 5000000, total: 15000000 })
+  })
+  it('excludes daily-budget variable lines when asked', () => {
+    const c = expenseCategories(M, Infinity, { excludeDailyBudget: true })
+    expect(c.find((r) => r.item === 'Living Budget')).toBeUndefined()
+    expect(c[0]).toMatchObject({ item: 'Rent', total: 10000000 })
   })
 })
 

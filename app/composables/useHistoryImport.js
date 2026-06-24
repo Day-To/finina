@@ -26,6 +26,7 @@ export function useHistoryImport() {
   }
   const running = ref(false)
   const status = ref('')
+  const dailyStatus = ref('')
 
   // Match by case-insensitive name; create only if missing → idempotent.
   async function ensureAccounts() {
@@ -150,5 +151,43 @@ export function useHistoryImport() {
     }
   }
 
-  return { run, running, status, monthCount: Object.keys(HISTORY.months).length }
+  // Daily-only import: load each available month's daily-expense log from the
+  // spreadsheet and NOTHING else (no income/expenses/surplus/investments/checklist).
+  // Skips any month that already has daily expenses, so it never duplicates rows.
+  async function runDailyOnly() {
+    if (running.value) return
+    running.value = true
+    try {
+      const ids = Object.keys(HISTORY.months).sort()
+      let imported = 0
+      let skipped = 0
+      let added = 0
+      for (const mid of ids) {
+        const dailies = HISTORY.months[mid].daily || []
+        if (!dailies.length) continue
+        const existing = await dailyExpensesRepo.list(uid(), mid)
+        if (existing.length) {
+          skipped++
+          dailyStatus.value = `Skipped ${mid} — already has ${existing.length} daily expense(s).`
+          continue
+        }
+        dailyStatus.value = `Loading ${dailies.length} daily expenses for ${mid}…`
+        // Stamp with the month's own currency when the month exists; else the sheet's.
+        const month = await monthsRepo.get(uid(), mid)
+        const cur = month?.currency || CUR
+        for (const [date, item, amount, note] of dailies) {
+          await dailyExpensesRepo.add(uid(), mid, { date: date || `${mid}-01`, item, amount: minor(amount), note: note || '' }, cur)
+          added++
+        }
+        imported++
+      }
+      dailyStatus.value = `Done — loaded ${added} daily expenses across ${imported} month(s); skipped ${skipped} already loaded.`
+      return { imported, skipped, added }
+    }
+    finally {
+      running.value = false
+    }
+  }
+
+  return { run, runDailyOnly, running, status, dailyStatus, monthCount: Object.keys(HISTORY.months).length }
 }

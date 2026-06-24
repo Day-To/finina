@@ -69,6 +69,18 @@ async function loadHistory() {
     toast.error(`Import failed: ${e?.message || 'unknown error'}`)
   }
 }
+
+async function loadDailyExpenses() {
+  if (importer.running.value) return
+  if (!window.confirm(`Load daily expenses for all available months (Feb–Jun 2026) from the spreadsheet? Months that already have daily expenses are skipped — nothing else is touched.`)) return
+  try {
+    const r = await importer.runDailyOnly()
+    toast.success(`Loaded daily expenses for ${r.imported} month(s); skipped ${r.skipped} already loaded`)
+  }
+  catch (e) {
+    toast.error(`Daily import failed: ${e?.message || 'unknown error'}`)
+  }
+}
 </script>
 
 <template>
@@ -140,6 +152,20 @@ async function loadHistory() {
           {{ importer.running.value ? 'Importing…' : 'Load 2026 data' }}
         </UiButton>
         <span v-if="importer.status.value" class="text-sm text-muted-foreground">{{ importer.status.value }}</span>
+      </UiCardContent>
+    </UiCard>
+
+    <!-- Daily-expenses-only import (temporary) -->
+    <UiCard class="border-dashed">
+      <UiCardHeader>
+        <UiCardTitle>Load daily expenses</UiCardTitle>
+        <UiCardDescription>Loads only the daily-expense log for each available month (Feb–Jun 2026) from your spreadsheet. Months that already have daily expenses are skipped, so it never duplicates rows.</UiCardDescription>
+      </UiCardHeader>
+      <UiCardContent class="flex items-center gap-3">
+        <UiButton variant="outline" :disabled="importer.running.value" @click="loadDailyExpenses">
+          {{ importer.running.value ? 'Loading…' : 'Load daily expenses' }}
+        </UiButton>
+        <span v-if="importer.dailyStatus.value" class="text-sm text-muted-foreground">{{ importer.dailyStatus.value }}</span>
       </UiCardContent>
     </UiCard>
 

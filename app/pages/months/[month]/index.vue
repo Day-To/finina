@@ -47,6 +47,7 @@ function comparable(m) {
   return stableStringify({
     income: m.income, fixedExpenses: m.fixedExpenses, variableExpenses: m.variableExpenses,
     surplus: m.surplus, flow: m.flow, investments: m.investments, manualTodos, done,
+    notes: m.notes ?? '',
   })
 }
 
@@ -481,6 +482,16 @@ async function confirmResync() {
           <UiCardHeader><UiCardTitle class="text-base">Transfers</UiCardTitle></UiCardHeader>
           <UiCardContent>
             <FlowMapper v-model="draft.flow" :sources="flowSources" :accounts="accounts" :currency="currency" :income="draft.income" />
+          </UiCardContent>
+        </UiCard>
+
+        <UiCard>
+          <UiCardHeader>
+            <UiCardTitle class="text-base">Notes</UiCardTitle>
+            <UiCardDescription>Anything worth remembering about this month.</UiCardDescription>
+          </UiCardHeader>
+          <UiCardContent>
+            <UiTextarea v-model="draft.notes" placeholder="e.g. One-off bonus this month, postponed the wedding fund transfer…" rows="4" />
           </UiCardContent>
         </UiCard>
       </div>

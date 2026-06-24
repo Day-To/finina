@@ -107,6 +107,7 @@ export function useMonth(monthIdRef) {
       flow: { incomeAccountId: null, allocations: [] },
       investments: { mf: [], stocks: [], holdings: [], holdingsFrozen: true },
       checklist: [],
+      notes: '',
     }
     await monthsRepo.upsert(uid(), monthId.value, blank)
     return blank
@@ -178,6 +179,7 @@ export function useMonth(monthIdRef) {
         if (n > 0) { manualDone.set(c.label, n - 1); return { ...c, isDone: true } }
         return c
       }),
+      notes: cur.notes ?? '',
       createdAt: cur.createdAt,
     }
     await monthsRepo.upsert(uid(), monthId.value, merged)

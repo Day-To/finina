@@ -290,6 +290,8 @@ export const monthSchema = z.object({
     holdingsFrozen: z.boolean().default(false),
   }).default({ mf: [], stocks: [], holdings: [], holdingsFrozen: false }),
   checklist: z.array(checklistLineSchema).default([]),
+  // Free-form notes for this month (plain text, may be multi-line).
+  notes: z.string().default(''),
   createdAt: timestamp.optional(),
   updatedAt: timestamp.optional(),
 })

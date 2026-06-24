@@ -20,6 +20,7 @@ export function monthlySeries(months) {
     const variable = sumBy(m.variableExpenses, (l) => l.amount)
     const sp = surplus(m)
     const pools = investmentPools(m)
+    const invested = pools.mf + pools.stocks
     return {
       month: m.month,
       income,
@@ -30,13 +31,23 @@ export function monthlySeries(months) {
       savingsRate: income > 0 ? sp / income : 0,
       mf: pools.mf,
       stocks: pools.stocks,
-      invested: pools.mf + pools.stocks,
+      invested,
+      // Share of income routed to investments this month ("investing rate").
+      investRate: income > 0 ? invested / income : 0,
     }
   })
 }
 
-/** Aggregate fixed + variable expense LINES by item name across months. */
-export function expenseCategories(months, limit = Infinity) {
+/**
+ * Aggregate fixed + variable expense LINES by item name across months.
+ * @param {object[]} months
+ * @param {number} [limit]
+ * @param {{ excludeDailyBudget?: boolean }} [opts] When excludeDailyBudget is set,
+ *   variable lines flagged isDailyBudget are skipped — they represent the daily
+ *   spending pool (tracked separately) and otherwise dominate the ranking.
+ */
+export function expenseCategories(months, limit = Infinity, opts = {}) {
+  const { excludeDailyBudget = false } = opts
   const map = new Map()
   const bump = (item, key, amt) => {
     const name = (item || 'Untitled').trim() || 'Untitled'
@@ -47,7 +58,10 @@ export function expenseCategories(months, limit = Infinity) {
   }
   for (const m of months ?? []) {
     for (const l of m.fixedExpenses ?? []) bump(l.item, 'fixed', l.amount)
-    for (const l of m.variableExpenses ?? []) bump(l.item, 'variable', l.amount)
+    for (const l of m.variableExpenses ?? []) {
+      if (excludeDailyBudget && l.isDailyBudget) continue
+      bump(l.item, 'variable', l.amount)
+    }
   }
   const rows = [...map.values()].sort((a, b) => b.total - a.total)
   return Number.isFinite(limit) ? rows.slice(0, limit) : rows
