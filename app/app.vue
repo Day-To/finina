@@ -1,8 +1,13 @@
 <script setup>
 import { computed } from 'vue'
+import faviconUrl from '@/assets/f.png'
 
 const { isDark } = useTheme()
 const toasterTheme = computed(() => (isDark.value ? 'dark' : 'light'))
+
+useHead({
+  link: [{ rel: 'icon', type: 'image/png', href: faviconUrl }],
+})
 </script>
 
 <template>

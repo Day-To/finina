@@ -5,8 +5,9 @@
 import { ref, computed } from 'vue'
 import {
   HomeIcon, LandmarkIcon, NotebookPenIcon, CalendarDaysIcon, SettingsIcon,
-  PlusIcon, SunIcon, MoonIcon, LogOutIcon, WalletIcon, TrendingUpIcon, LineChartIcon,
+  PlusIcon, SunIcon, MoonIcon, LogOutIcon, TrendingUpIcon, LineChartIcon,
 } from '@lucide/vue'
+import fLogo from '@/assets/f.png'
 import { currentMonthId } from '@/lib/dates.js'
 import { DEFAULT_CURRENCY } from '@/domain/currencies.js'
 import { dailyExpensesRepo } from '@/repositories/dailyExpenses.js'
@@ -74,9 +75,7 @@ async function completeOnboarding() {
   <div v-if="showOnboarding" class="flex min-h-svh items-center justify-center bg-background p-4">
     <UiCard class="w-full max-w-md">
       <UiCardHeader>
-        <div class="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <WalletIcon class="size-5" />
-        </div>
+        <img :src="fLogo" alt="Finina" class="mb-2 size-10">
         <UiCardTitle>Welcome to Finina</UiCardTitle>
         <UiCardDescription>Pick your default currency to get started. You can change it later in Settings.</UiCardDescription>
       </UiCardHeader>
@@ -112,11 +111,11 @@ async function completeOnboarding() {
   <div v-else class="min-h-svh bg-background">
     <!-- Desktop sidebar (fixed, full height) -->
     <aside class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-sidebar md:flex">
-      <div class="flex h-14 items-center gap-2 border-b px-4">
-        <div class="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <WalletIcon class="size-4" />
-        </div>
-        <span class="font-semibold">Finina</span>
+      <div class="flex h-14 items-center border-b px-4">
+        <span class="flex items-baseline text-lg font-semibold" aria-label="Finina">
+          <img :src="fLogo" alt="" aria-hidden="true" class="size-7">
+          <span aria-hidden="true" class="-ml-1">inina</span>
+        </span>
       </div>
       <nav class="flex-1 space-y-1 p-3">
         <NuxtLink
@@ -152,11 +151,11 @@ async function completeOnboarding() {
     <div class="flex min-h-svh min-w-0 flex-col md:pl-60">
       <!-- Mobile top bar -->
       <header class="sticky top-0 z-20 flex h-14 items-center justify-between gap-2 border-b bg-background/95 px-4 backdrop-blur md:hidden">
-        <div class="flex items-center gap-2">
-          <div class="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <WalletIcon class="size-4" />
-          </div>
-          <span class="font-semibold">Finina</span>
+        <div class="flex items-center">
+          <span class="flex items-baseline text-lg font-semibold" aria-label="Finina">
+            <img :src="fLogo" alt="" aria-hidden="true" class="size-7">
+            <span aria-hidden="true" class="-ml-1">inina</span>
+          </span>
         </div>
         <div class="flex items-center gap-1">
           <UiButton variant="ghost" size="icon" class="size-9" aria-label="Insights" as-child>
