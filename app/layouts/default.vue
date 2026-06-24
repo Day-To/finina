@@ -185,7 +185,7 @@ async function completeOnboarding() {
     </div>
 
     <!-- Mobile bottom tab bar -->
-    <nav class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t bg-background/95 px-2 py-1.5 backdrop-blur md:hidden">
+    <nav class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t bg-background/95 px-2 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
       <NuxtLink
         v-for="item in mobileNav.slice(0, 2)"
         :key="item.to"

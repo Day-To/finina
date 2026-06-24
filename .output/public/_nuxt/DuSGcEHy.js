@@ -1,1 +1,0 @@
-import{v as n,aw as m,D as i}from"./CdILXe_h.js";function r(){const e=i(),t=n(()=>["#text","#comment"].includes(e.value?.$el.nodeName)?e.value?.$el.nextElementSibling:m(e));return{primitiveElement:e,currentElement:t}}export{r as u};
