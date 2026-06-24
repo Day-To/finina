@@ -1,0 +1,16 @@
+<div id="finina-splash" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#ffffff;z-index:99999">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+    <div style="width:40px;height:40px;border:3px solid rgba(127,127,127,.25);border-top-color:#10b981;border-radius:9999px;animation:finina-spin .8s linear infinite"></div>
+    <div style="font-family:Inter,system-ui,-apple-system,sans-serif;font-size:14px;color:#8a8a8a">Loading Finina…</div>
+  </div>
+</div>
+<style>@keyframes finina-spin{to{transform:rotate(360deg)}}</style>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('finina-theme')
+      var dark = t === 'dark' || ((!t || t === 'auto') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      if (dark) document.getElementById('finina-splash').style.background = '#0a0a0a'
+    } catch (e) {}
+  })()
+</script>

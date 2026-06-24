@@ -1,0 +1,1 @@
+import{o as a,c as t,r as o,J as c,m as l,A as n}from"./CdILXe_h.js";const i={__name:"CardDescription",props:{class:{type:null,required:!1}},setup(e){const s=e;return(r,d)=>(a(),t("div",{"data-slot":"card-description",class:c(l(n)("text-muted-foreground text-xs/relaxed",s.class))},[o(r.$slots,"default")],2))}};export{i as _};

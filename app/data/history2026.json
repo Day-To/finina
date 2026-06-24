@@ -1,0 +1,1227 @@
+{
+ "currency": "INR",
+ "accounts": [
+  "PNB",
+  "SBI",
+  "Axis Bank",
+  "Kotak Mahindra Bank"
+ ],
+ "incomeAccount": "SBI",
+ "funds": [
+  {
+   "name": "Aditya Birla Sun Life Liquid Fund Direct Growth",
+   "category": "Debt",
+   "subCategory": "Liquid",
+   "distribution": "VARIABLE",
+   "value": 33.4,
+   "bucket": "emergency"
+  },
+  {
+   "name": "Aditya Birla Sun Life Medium Term Plan Direct Growth",
+   "category": "Debt",
+   "subCategory": "Medium Duration",
+   "distribution": "VARIABLE",
+   "value": 33.3,
+   "bucket": "wedding"
+  },
+  {
+   "name": "Axis Large & Mid Cap Fund Direct Growth",
+   "category": "Equity",
+   "subCategory": "Large & MidCap",
+   "distribution": "FIXED",
+   "value": 5000.0,
+   "bucket": "long term"
+  },
+  {
+   "name": "Axis Liquid Direct Fund Growth",
+   "category": "Debt",
+   "subCategory": "Liquid",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  },
+  {
+   "name": "HDFC Flexi Cap Direct Plan Growth",
+   "category": "Equity",
+   "subCategory": "Flexi Cap",
+   "distribution": "FIXED",
+   "value": 5000.0,
+   "bucket": "long term"
+  },
+  {
+   "name": "HDFC Mid Cap Fund Direct Growth",
+   "category": "Equity",
+   "subCategory": "Mid Cap",
+   "distribution": "FIXED",
+   "value": 5000.0,
+   "bucket": "long term"
+  },
+  {
+   "name": "HSBC Multi Asset Allocation Fund Direct Growth",
+   "category": "Hybrid",
+   "subCategory": "Multi Asset Allocation",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  },
+  {
+   "name": "ICICI Prudential Technology Direct Plan Growth",
+   "category": "Equity",
+   "subCategory": "Sectoral",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  },
+  {
+   "name": "Kotak ELSS Tax Saver Fund Direct Growth",
+   "category": "Equity",
+   "subCategory": "ELSS",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  },
+  {
+   "name": "LIC MF Gold ETF FoF Direct Growth",
+   "category": "Commodities",
+   "subCategory": "Gold",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  },
+  {
+   "name": "Mirae Asset Large & Midcap Fund Direct Growth",
+   "category": "Equity",
+   "subCategory": "Large & MidCap",
+   "distribution": "FIXED",
+   "value": 5000.0,
+   "bucket": "long term"
+  },
+  {
+   "name": "Motilal Oswal ELSS Tax Saver Fund Direct Growth",
+   "category": "Equity",
+   "subCategory": "ELSS",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  },
+  {
+   "name": "Nippon India Small Cap Fund Direct Growth",
+   "category": "Equity",
+   "subCategory": "Small Cap",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  },
+  {
+   "name": "Parag Parikh Flexi Cap Fund Direct Growth",
+   "category": "Equity",
+   "subCategory": "Flexi Cap",
+   "distribution": "FIXED",
+   "value": 5000.0,
+   "bucket": "long term"
+  },
+  {
+   "name": "Quant Small Cap Fund Direct Plan Growth",
+   "category": "Equity",
+   "subCategory": "Small Cap",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  },
+  {
+   "name": "SBI Multi Asset Allocation Fund Direct Growth",
+   "category": "Hybrid",
+   "subCategory": "Multi Asset Allocation",
+   "distribution": "VARIABLE",
+   "value": 33.3,
+   "bucket": "wedding"
+  },
+  {
+   "name": "SBI Technology Opportunities Fund Direct Growth",
+   "category": "Equity",
+   "subCategory": "Sectoral",
+   "distribution": "PAUSED",
+   "value": 0,
+   "bucket": ""
+  }
+ ],
+ "stocks": [
+  {
+   "name": "NIP IND ETF JUNIOR BEES",
+   "category": "Small Case",
+   "platform": "Groww",
+   "distribution": "VARIABLE",
+   "value": 12.0
+  },
+  {
+   "name": "NIP IND ETF NIFTY BEES",
+   "category": "Small Case",
+   "platform": "Groww",
+   "distribution": "VARIABLE",
+   "value": 12.0
+  },
+  {
+   "name": "ZERODHAAMC - GOLDCASE",
+   "category": "Small Case",
+   "platform": "Groww",
+   "distribution": "VARIABLE",
+   "value": 12.0
+  },
+  {
+   "name": "ZERODHAAMC - LIQUIDCASE",
+   "category": "Small Case",
+   "platform": "Groww",
+   "distribution": "VARIABLE",
+   "value": 12.0
+  },
+  {
+   "name": "ZERODHAAMC - MID150CASE",
+   "category": "Small Case",
+   "platform": "Groww",
+   "distribution": "VARIABLE",
+   "value": 12.0
+  },
+  {
+   "name": "Caterpillar Inc",
+   "category": "US Stock",
+   "platform": "TickerTape",
+   "distribution": "VARIABLE",
+   "value": 20.0
+  },
+  {
+   "name": "iShares MSCI Japan ETF",
+   "category": "US Stock",
+   "platform": "TickerTape",
+   "distribution": "VARIABLE",
+   "value": 20.0
+  }
+ ],
+ "months": {
+  "2026-02": {
+   "income": 140000,
+   "fixed": [
+    [
+     "ABCD EMI",
+     13040
+    ],
+    [
+     "Bajaj EMI",
+     5479
+    ],
+    [
+     "Rentomojo",
+     5453
+    ],
+    [
+     "Mobile Recharge",
+     707
+    ],
+    [
+     "Wifi Recharge",
+     589
+    ],
+    [
+     "Stella Maintenance",
+     6000
+    ],
+    [
+     "Misc",
+     1800
+    ]
+   ],
+   "variable": [
+    [
+     "Living Budget",
+     20000,
+     true
+    ]
+   ],
+   "surplus": [
+    [
+     "Mutual Funds",
+     65.0,
+     "MUTUAL_FUNDS"
+    ],
+    [
+     "Stocks",
+     3.0,
+     "STOCKS"
+    ],
+    [
+     "Loan Repayment Extra",
+     25.0,
+     null
+    ],
+    [
+     "Travel / Fun",
+     3.0,
+     null
+    ],
+    [
+     "Buffer / Flex",
+     2.0,
+     null
+    ],
+    [
+     "Emergency Fund",
+     2.0,
+     null
+    ]
+   ],
+   "daily": [
+    [
+     "2026-02-01",
+     "Apple one",
+     365,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Youtube Premium",
+     300,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Netflix",
+     700,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Cursor",
+     2300,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Blinkit",
+     740,
+     "Garbage bag, eggs, coffee, cat food, steel wool"
+    ],
+    [
+     "2026-02-01",
+     "Swiggy",
+     1200,
+     "Rominoes"
+    ],
+    [
+     "2026-02-01",
+     "Google Workspace",
+     178,
+     "DayTo.in"
+    ],
+    [
+     "2026-02-01",
+     "Swiggy",
+     170,
+     "Kfc"
+    ],
+    [
+     "2026-02-01",
+     "Coco",
+     838,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Blinkit",
+     800,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Fuel",
+     200,
+     "Scooty"
+    ],
+    [
+     "2026-02-01",
+     "Fuel",
+     500,
+     "Alto"
+    ],
+    [
+     "2026-02-01",
+     "Misc",
+     360,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Maid delhi",
+     2000,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Airtel wifi pay",
+     589,
+     "Paid early coz last date is 19 and after that it adds late fees"
+    ],
+    [
+     "2026-02-01",
+     "Us Stocks",
+     1400,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Ccd",
+     350,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Pizza",
+     245,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Misc",
+     200,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Mom friend",
+     1530,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Coco",
+     640,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Zomato",
+     430,
+     "Haldirams"
+    ],
+    [
+     "2026-02-01",
+     "Tapri Cafe",
+     1450,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Mom utensil",
+     629,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Misc",
+     125,
+     ""
+    ],
+    [
+     "2026-02-01",
+     "Chicken",
+     600,
+     "Ali shop ec road"
+    ]
+   ]
+  },
+  "2026-03": {
+   "income": 140000,
+   "fixed": [
+    [
+     "ABCD EMI",
+     13040
+    ],
+    [
+     "Bajaj EMI",
+     5479
+    ],
+    [
+     "Rentomojo",
+     5453
+    ],
+    [
+     "Mobile Recharge",
+     907
+    ],
+    [
+     "Wifi Recharge",
+     800
+    ],
+    [
+     "Stella Maintenance",
+     6000
+    ],
+    [
+     "Misc",
+     1800
+    ]
+   ],
+   "variable": [
+    [
+     "Living Budget",
+     30000,
+     true
+    ],
+    [
+     "Credit Card",
+     40000,
+     false
+    ]
+   ],
+   "surplus": [
+    [
+     "Mutual Funds",
+     65.0,
+     "MUTUAL_FUNDS"
+    ],
+    [
+     "Stocks",
+     3.0,
+     "STOCKS"
+    ],
+    [
+     "Loan Repayment Extra",
+     25.0,
+     null
+    ],
+    [
+     "Travel / Fun",
+     3.0,
+     null
+    ],
+    [
+     "Buffer / Flex",
+     2.0,
+     null
+    ],
+    [
+     "Emergency Fund",
+     2.0,
+     null
+    ]
+   ],
+   "daily": [
+    [
+     "2026-03-01",
+     "Apple one",
+     365,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     870,
+     "Water coffee etc for delhi to dehradun"
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     1908,
+     "Dates shopping"
+    ],
+    [
+     "2026-03-01",
+     "Google Workspace",
+     178,
+     "DayTo.in"
+    ],
+    [
+     "2026-03-01",
+     "Swiggy",
+     263,
+     "Rominoes"
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     742,
+     "Was hungry and roza and mom ill so food"
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     147,
+     "Mom - Ors"
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     287,
+     "Nariyal Paani"
+    ],
+    [
+     "2026-03-01",
+     "Swiggy",
+     482,
+     "Haldirams"
+    ],
+    [
+     "2026-03-01",
+     "Ccd",
+     605,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Fuel",
+     1200,
+     "Xuv"
+    ],
+    [
+     "2026-03-01",
+     "Ccd",
+     231,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Stella medicine and food",
+     800,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Airtel Wifi Bill",
+     589,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Dominoes",
+     615,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Coco",
+     353,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Plates",
+     1200,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     161,
+     "Dahi and pet bags"
+    ],
+    [
+     "2026-03-01",
+     "Rominoes",
+     394,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Eddies",
+     650,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Misc",
+     200,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     1030,
+     "Sheba cat food"
+    ],
+    [
+     "2026-03-01",
+     "Swiggy",
+     287,
+     "Haldirams - matar kulcha"
+    ],
+    [
+     "2026-03-01",
+     "Misc",
+     606,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Ccd",
+     305,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Ccd",
+     305,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Social + lasa",
+     2500,
+     "Dhruv"
+    ],
+    [
+     "2026-03-01",
+     "Rominus Pizza",
+     224,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Utc Bus",
+     974,
+     "Zaid Bus"
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     1003,
+     "Cat litter, cat food etc"
+    ],
+    [
+     "2026-03-01",
+     "Otrivin",
+     120,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Airtel data recharge",
+     49,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Dominoes",
+     647,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Misc",
+     504,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Blinkit",
+     836,
+     "Milk, biscuits, maggie , etc"
+    ],
+    [
+     "2026-03-01",
+     "Mom Payment",
+     2800,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Abu bus",
+     975,
+     ""
+    ],
+    [
+     "2026-03-01",
+     "Party Dhruv",
+     4595,
+     ""
+    ]
+   ]
+  },
+  "2026-04": {
+   "income": 140000,
+   "fixed": [
+    [
+     "ABCD EMI",
+     13040
+    ],
+    [
+     "Bajaj EMI",
+     6000
+    ],
+    [
+     "Rentomojo",
+     5453
+    ],
+    [
+     "Mobile Recharge",
+     707
+    ],
+    [
+     "Wifi Recharge",
+     800
+    ],
+    [
+     "Stella Maintenance",
+     3000
+    ]
+   ],
+   "variable": [
+    [
+     "Living Budget",
+     15000,
+     true
+    ]
+   ],
+   "surplus": [
+    [
+     "Mutual Funds",
+     0.0,
+     "MUTUAL_FUNDS"
+    ],
+    [
+     "Stocks",
+     0.0,
+     "STOCKS"
+    ],
+    [
+     "Loan Repayment Extra",
+     0.0,
+     null
+    ],
+    [
+     "Travel / Fun",
+     100.0,
+     null
+    ],
+    [
+     "Buffer / Flex",
+     0.0,
+     null
+    ],
+    [
+     "Emergency Fund",
+     0.0,
+     null
+    ]
+   ],
+   "daily": [
+    [
+     "2026-04-01",
+     "Ccd",
+     245,
+     ""
+    ],
+    [
+     "2026-04-01",
+     "Tapri Cafe",
+     1700,
+     ""
+    ],
+    [
+     "2026-04-01",
+     "Car Washing",
+     500,
+     "XUV 500"
+    ],
+    [
+     "2026-04-01",
+     "Blinkit",
+     221,
+     "Coffee"
+    ],
+    [
+     "2026-04-01",
+     "Mom parcel",
+     434,
+     ""
+    ],
+    [
+     "2026-04-01",
+     "Dominoes",
+     516,
+     ""
+    ],
+    [
+     "2026-04-01",
+     "Vande bharat",
+     3445,
+     ""
+    ]
+   ]
+  },
+  "2026-05": {
+   "income": 140000,
+   "fixed": [
+    [
+     "ABCD EMI",
+     13040
+    ],
+    [
+     "Bajaj EMI",
+     6000
+    ],
+    [
+     "Rentomojo",
+     5453
+    ],
+    [
+     "Mobile Recharge",
+     907
+    ],
+    [
+     "Wifi Recharge",
+     800
+    ],
+    [
+     "Stella Maintenance",
+     6000
+    ],
+    [
+     "Misc/Credit Card",
+     1800
+    ]
+   ],
+   "variable": [
+    [
+     "Living Budget",
+     20000,
+     true
+    ]
+   ],
+   "surplus": [
+    [
+     "Mutual Funds",
+     65.0,
+     "MUTUAL_FUNDS"
+    ],
+    [
+     "Stocks",
+     3.0,
+     "STOCKS"
+    ],
+    [
+     "Loan Repayment Extra",
+     25.0,
+     null
+    ],
+    [
+     "Travel / Fun",
+     3.0,
+     null
+    ],
+    [
+     "Buffer / Flex",
+     2.0,
+     null
+    ],
+    [
+     "Emergency Fund",
+     2.0,
+     null
+    ]
+   ],
+   "daily": [
+    [
+     "2026-05-01",
+     "Swiggy",
+     295,
+     "Chole bhature delhi breakfast"
+    ],
+    [
+     "2026-05-01",
+     "Swiggy",
+     595,
+     "Fruit salad and custard"
+    ],
+    [
+     "2026-05-01",
+     "Swiggy",
+     484,
+     "Bread pakora chai and aloo prantha"
+    ],
+    [
+     "2026-05-01",
+     "Swiggy",
+     646,
+     "Custard and humus and pita bread"
+    ],
+    [
+     "2026-05-01",
+     "Blinkit",
+     862,
+     ""
+    ],
+    [
+     "2026-05-01",
+     "Swiggy",
+     182,
+     "Tea"
+    ],
+    [
+     "2026-05-01",
+     "Swiggy",
+     271,
+     "Burger singh"
+    ],
+    [
+     "2026-05-01",
+     "Bus Ticket",
+     739,
+     "Delhi to dehradun"
+    ],
+    [
+     "2026-05-01",
+     "Blinkit",
+     384,
+     ""
+    ],
+    [
+     "2026-05-01",
+     "Ola",
+     366,
+     "Isbt dehradun to home"
+    ],
+    [
+     "2026-05-01",
+     "Blinkit",
+     410,
+     "Bubble wrap"
+    ],
+    [
+     "2026-05-01",
+     "Kfc",
+     676,
+     ""
+    ],
+    [
+     "2026-05-01",
+     "Fuel",
+     300,
+     "Scooty"
+    ],
+    [
+     "2026-05-01",
+     "Misc",
+     220,
+     ""
+    ],
+    [
+     "2026-05-01",
+     "Fuel",
+     1000,
+     "Xuv"
+    ],
+    [
+     "2026-05-01",
+     "Blinkit",
+     529,
+     ""
+    ],
+    [
+     "2026-05-01",
+     "Kumar chole bhature",
+     600,
+     ""
+    ],
+    [
+     "2026-05-01",
+     "Blinkit",
+     309,
+     "Chocos and cornflake"
+    ],
+    [
+     "2026-05-12",
+     "Bread and eggs",
+     87,
+     ""
+    ],
+    [
+     "2026-05-13",
+     "Fuel",
+     300,
+     "Scooty"
+    ],
+    [
+     "2026-05-14",
+     "Swiggy",
+     383,
+     "Taco bell"
+    ],
+    [
+     "2026-05-15",
+     "Eddies",
+     350,
+     ""
+    ],
+    [
+     "2026-05-16",
+     "Blinkit",
+     1046,
+     "House stuff and others"
+    ],
+    [
+     "2026-05-26",
+     "Delhi Trip Spends",
+     8966,
+     ""
+    ]
+   ]
+  },
+  "2026-06": {
+   "income": 153682,
+   "fixed": [
+    [
+     "ABCD EMI",
+     13040
+    ],
+    [
+     "Bajaj EMI",
+     5479
+    ],
+    [
+     "Rentomojo",
+     5453
+    ],
+    [
+     "Mobile Recharge",
+     906
+    ],
+    [
+     "Wifi Recharge",
+     589
+    ],
+    [
+     "Stella Maintenance",
+     5000
+    ]
+   ],
+   "variable": [
+    [
+     "Living Budget",
+     10000,
+     true
+    ],
+    [
+     "Credit Cards",
+     19093,
+     false
+    ]
+   ],
+   "surplus": [
+    [
+     "Mutual Funds",
+     61.0,
+     "MUTUAL_FUNDS"
+    ],
+    [
+     "Stocks",
+     7.0,
+     "STOCKS"
+    ],
+    [
+     "Loan Repayment Extra",
+     20.0,
+     null
+    ],
+    [
+     "Travel / Fun",
+     5.0,
+     null
+    ],
+    [
+     "Buffer / Flex",
+     2.0,
+     null
+    ],
+    [
+     "Emergency Fund",
+     5.0,
+     null
+    ]
+   ],
+   "daily": [
+    [
+     "2026-06-02",
+     "Medicine",
+     500,
+     "Duolin and buedacod"
+    ],
+    [
+     "2026-06-02",
+     "Groceries",
+     112,
+     "Milk and beans"
+    ],
+    [
+     "2026-06-03",
+     "Blinkit",
+     183,
+     "2 coldrinks, 1 chips, 1 chocolate"
+    ],
+    [
+     "2026-06-04",
+     "Google workspace subscription",
+     190,
+     "Dayto.in"
+    ],
+    [
+     "2026-06-05",
+     "Milk",
+     36,
+     ""
+    ],
+    [
+     "2026-06-05",
+     "Swiggy",
+     228,
+     "Paneer roll"
+    ],
+    [
+     "2026-06-06",
+     "Blinkit",
+     130,
+     "Bread, dahi"
+    ],
+    [
+     "2026-06-08",
+     "Swiggy",
+     435,
+     "Kfc"
+    ],
+    [
+     "2026-06-08",
+     "Swiggy",
+     475,
+     "Kfc abu"
+    ],
+    [
+     "2026-06-09",
+     "Misc",
+     577,
+     ""
+    ],
+    [
+     "2026-06-10",
+     "Zomato",
+     419,
+     "Heena birthday cake"
+    ],
+    [
+     "2026-06-12",
+     "Dominoes",
+     577,
+     ""
+    ],
+    [
+     "2026-06-13",
+     "Netflix",
+     649,
+     ""
+    ],
+    [
+     "2026-06-13",
+     "Swiggy",
+     228,
+     "Paneer roll"
+    ]
+   ]
+  }
+ }
+}

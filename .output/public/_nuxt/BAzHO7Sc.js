@@ -1,0 +1,1 @@
+import{o as a,c as l,J as n,m as t,A as o}from"./CdILXe_h.js";const p={__name:"Skeleton",props:{class:{type:null,required:!1}},setup(e){const s=e;return(r,c)=>(a(),l("div",{"data-slot":"skeleton",class:n(t(o)("bg-muted rounded-md animate-pulse",s.class))},null,2))}};export{p as _};

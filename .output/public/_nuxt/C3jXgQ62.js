@@ -1,0 +1,1 @@
+import{M as o}from"./CdILXe_h.js";const t=[["path",{d:"m9 18 6-6-6-6",key:"mthhwq"}]],s=o("chevron-right",t);const e=[["path",{d:"M5 12h14",key:"1ays0h"}],["path",{d:"M12 5v14",key:"s699le"}]],c=o("plus",e);export{s as C,c as P};

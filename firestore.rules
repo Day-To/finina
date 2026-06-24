@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// Owner-only subtree (§4). A user can read/write only their own data; all app
+// data lives under users/{uid}. Cross-field arithmetic (percent sums,
+// reconciliation) is enforced in the app as warnings, not in rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
