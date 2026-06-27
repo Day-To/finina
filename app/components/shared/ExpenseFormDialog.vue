@@ -57,6 +57,13 @@ const dateValue = computed({
 const minValue = computed(() => safeParse(monthMin.value))
 const maxValue = computed(() => safeParse(monthMax.value))
 
+// On touch devices, let the sheet open without grabbing focus — otherwise the
+// dialog auto-focuses the first input and the on-screen keyboard covers it.
+// Desktop keeps its convenient auto-focus.
+function onOpenAutoFocus(e) {
+  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) e.preventDefault()
+}
+
 async function submit() {
   if (!isSetup.value || !props.onSave) return
   const item = form.item.trim()
@@ -76,7 +83,7 @@ async function submit() {
 
 <template>
   <UiSheet :open="open" @update:open="emit('update:open', $event)">
-    <UiSheetContent side="bottom" class="mx-auto max-w-lg gap-0 rounded-t-2xl">
+    <UiSheetContent side="bottom" class="mx-auto max-w-lg gap-0 rounded-t-2xl" @open-auto-focus="onOpenAutoFocus">
       <UiSheetHeader class="pb-2">
         <UiSheetTitle>{{ isEdit ? 'Edit expense' : 'Add expense' }}</UiSheetTitle>
         <UiSheetDescription>{{ monthLabel }}</UiSheetDescription>

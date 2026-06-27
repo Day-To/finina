@@ -17,7 +17,9 @@ export default defineNuxtConfig({
     head: {
       title: 'Finina',
       meta: [
-        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+        // `maximum-scale=1` stops iOS Safari from auto-zooming when an input
+        // (font-size < 16px) is focused; the compact field sizes stay intact.
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover' },
         { name: 'description', content: 'Plan your month, track daily spending, and grow your investments.' },
         // Standalone install + iOS home-screen behaviour.
         { name: 'mobile-web-app-capable', content: 'yes' },
