@@ -1,9 +1,9 @@
 <script setup>
 // S10 — Settings. Default currency (applies to NEW records only — never converts
 // existing stamped docs), theme, optional locale, and account / sign-out.
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { SunIcon, MoonIcon, MonitorIcon } from '@lucide/vue'
+import { SunIcon, MoonIcon, MonitorIcon, DownloadIcon, UploadIcon } from '@lucide/vue'
 
 const auth = useAuthStore()
 const { settings, currency, locale, hasSettings, setCurrency, setLocale } = useSettings()
@@ -54,6 +54,81 @@ const themeOptions = [
 async function onSignOut() {
   await auth.logout()
   await navigateTo('/login')
+}
+
+// ── Backup & restore (full account export / import) ──
+const transfer = useDataTransfer()
+const fileInput = ref(null)
+const selectedFile = ref(null)
+const pendingBackup = ref(null)
+const restoreMode = ref('merge')
+const pendingCounts = computed(() => (pendingBackup.value ? transfer.countRecords(pendingBackup.value.data) : null))
+
+async function onExport() {
+  try {
+    const r = await transfer.exportToFile()
+    if (r) {
+      const c = r.counts
+      toast.success(`Backup ${r.method === 'share' ? 'saved' : 'downloaded'} — ${c.months} months, ${c.dailyExpenses} daily expenses, ${c.bankAccounts} accounts, ${c.investments} investments`)
+    }
+  }
+  catch (e) {
+    toast.error(`Export failed: ${e?.message || 'unknown error'}`)
+  }
+}
+
+async function onPickFile(e) {
+  if (transfer.importing.value) return
+  const file = e.target.files?.[0] || null
+  selectedFile.value = file
+  pendingBackup.value = null
+  if (!file) return
+  try {
+    pendingBackup.value = await transfer.readBackupFile(file)
+  }
+  catch (err) {
+    toast.error(err?.message || 'Could not read that file')
+    clearFile()
+  }
+}
+
+function clearFile() {
+  if (transfer.importing.value) return
+  selectedFile.value = null
+  pendingBackup.value = null
+  restoreMode.value = 'merge'
+  if (fileInput.value) fileInput.value.value = ''
+}
+
+async function onRestore() {
+  const backup = pendingBackup.value
+  if (!backup) return toast.error('Choose a backup file first')
+  const mode = restoreMode.value || 'merge'
+  const c = pendingCounts.value
+  const summary = `${c.months} months, ${c.dailyExpenses} daily expenses, ${c.bankAccounts} accounts, ${c.investments} investments`
+  const totalRecords = c.bankAccounts + c.investments + c.months + c.dailyExpenses + c.planVersions + c.investmentPlanVersions
+
+  if (mode === 'replace') {
+    if (totalRecords === 0) {
+      return toast.error('This backup has no records — refusing to replace, as it would erase your account and restore nothing.')
+    }
+    if (!window.confirm(`Replace ALL current data with this backup (${summary})?\n\nEverything in your account that isn't in this backup will be permanently deleted. This cannot be undone.`)) return
+    if (window.prompt('Type REPLACE to confirm wiping your current data and restoring this backup:') !== 'REPLACE') {
+      return toast.error('Restore cancelled — confirmation did not match')
+    }
+  }
+  else if (!window.confirm(`Merge this backup into your data (${summary})?\n\nRecords with matching IDs are overwritten; nothing is deleted.`)) {
+    return
+  }
+
+  try {
+    await transfer.restore(backup, mode)
+    toast.success(mode === 'replace' ? 'Account replaced from backup' : 'Backup merged into your account')
+    clearFile()
+  }
+  catch (e) {
+    toast.error(`Restore failed: ${e?.message || 'unknown error'}`)
+  }
 }
 
 // ── One-time historical import (remove this block + useHistoryImport.js + data/history2026.json when done) ──
@@ -137,6 +212,72 @@ async function loadDailyExpenses() {
             <UiInput id="locale" v-model="localeDraft" placeholder="en-IN" @keydown.enter="saveLocale" />
           </div>
           <UiButton variant="outline" @click="saveLocale">Save</UiButton>
+        </div>
+      </UiCardContent>
+    </UiCard>
+
+    <!-- Backup & restore -->
+    <UiCard>
+      <UiCardHeader>
+        <UiCardTitle>Backup &amp; restore</UiCardTitle>
+        <UiCardDescription>
+          Download a full backup of your account as a JSON file, or restore from one. Includes settings, bank accounts, investments, every month and its daily expenses, and your full plan history.
+        </UiCardDescription>
+      </UiCardHeader>
+      <UiCardContent class="space-y-6">
+        <!-- Export -->
+        <div class="space-y-2">
+          <UiLabel>Export</UiLabel>
+          <div>
+            <UiButton variant="outline" :disabled="transfer.exporting.value" @click="onExport">
+              <DownloadIcon class="size-4" />
+              {{ transfer.exporting.value ? 'Preparing…' : 'Download backup (.json)' }}
+            </UiButton>
+          </div>
+          <p class="text-sm text-muted-foreground">Saves everything to a file on this device. Keep it somewhere safe.</p>
+        </div>
+
+        <!-- Restore -->
+        <div class="space-y-3 border-t pt-4">
+          <UiLabel>Restore</UiLabel>
+          <input ref="fileInput" type="file" accept="application/json,.json" class="hidden" @change="onPickFile">
+          <div class="flex flex-wrap items-center gap-3">
+            <UiButton variant="outline" type="button" :disabled="transfer.importing.value" @click="fileInput?.click()">
+              <UploadIcon class="size-4" />
+              Choose backup file…
+            </UiButton>
+            <button v-if="selectedFile" type="button" :disabled="transfer.importing.value" class="text-sm text-muted-foreground underline-offset-4 hover:underline disabled:opacity-50" @click="clearFile">Clear</button>
+          </div>
+
+          <div v-if="pendingBackup" class="space-y-3 rounded-md border p-3">
+            <p class="text-sm text-muted-foreground">
+              <span class="font-medium text-foreground">{{ selectedFile?.name }}</span>
+              <template v-if="pendingBackup.exportedAt"> · backed up {{ String(pendingBackup.exportedAt).slice(0, 10) }}</template>
+            </p>
+            <p v-if="pendingCounts" class="text-sm text-muted-foreground">
+              {{ pendingCounts.months }} months · {{ pendingCounts.dailyExpenses }} daily expenses · {{ pendingCounts.bankAccounts }} accounts · {{ pendingCounts.investments }} investments
+            </p>
+
+            <div class="space-y-1.5">
+              <UiLabel>How to restore</UiLabel>
+              <UiToggleGroup v-model="restoreMode" type="single" variant="outline">
+                <UiToggleGroupItem value="merge" class="px-4">Merge</UiToggleGroupItem>
+                <UiToggleGroupItem value="replace" class="px-4">Replace</UiToggleGroupItem>
+              </UiToggleGroup>
+              <p class="text-xs text-muted-foreground">
+                {{ restoreMode === 'replace'
+                  ? 'Makes your account an exact copy of this backup — restores its records, then removes anything not in it.'
+                  : 'Adds and overwrites records from the backup; anything not in the file is kept.' }}
+              </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <UiButton :variant="restoreMode === 'replace' ? 'destructive' : 'default'" :disabled="transfer.importing.value" @click="onRestore">
+                {{ transfer.importing.value ? (transfer.status.value || 'Restoring…') : (restoreMode === 'replace' ? 'Replace from this file' : 'Merge from this file') }}
+              </UiButton>
+            </div>
+          </div>
+          <p v-else class="text-sm text-muted-foreground">Pick a <code>.json</code> backup to merge into or replace your current data.</p>
         </div>
       </UiCardContent>
     </UiCard>

@@ -22,6 +22,12 @@ export const investmentPlanRepo = {
     return s.exists() ? s.data() : emptyPtr()
   },
 
+  /** Raw pointer, or null when the doc doesn't exist (for exact-fidelity export). */
+  async getRaw(uid) {
+    const s = await getDoc(ptrRef(uid))
+    return s.exists() ? s.data() : null
+  },
+
   /** @returns {() => void} unsubscribe */
   subscribe(uid, cb, onErr) {
     return onSnapshot(ptrRef(uid), (s) => cb(s.exists() ? s.data() : emptyPtr()), (e) => onErr?.(e))
