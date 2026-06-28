@@ -30,9 +30,9 @@ const nav = [
 // the mobile top bar instead.
 const mobileNav = [
   { to: '/', label: 'Home', icon: HomeIcon },
-  { to: '/plan-designer', label: 'Plans', icon: NotebookPenIcon },
-  { to: '/investments', label: 'Investments', icon: TrendingUpIcon },
+  { to: '/insights', label: 'Insights', icon: LineChartIcon },
   { to: '/months', label: 'Months', icon: CalendarDaysIcon },
+  { to: '/investments', label: 'Investments', icon: TrendingUpIcon },
 ]
 // Global quick-add: the bottom-bar "+" opens the add-expense sheet for the
 // current month (today pre-selected) instead of navigating to the daily screen.
@@ -158,8 +158,8 @@ async function completeOnboarding() {
           </span>
         </div>
         <div class="flex items-center gap-1">
-          <UiButton variant="ghost" size="icon" class="size-9" aria-label="Insights" as-child>
-            <NuxtLink to="/insights"><LineChartIcon class="size-4" /></NuxtLink>
+          <UiButton variant="ghost" size="icon" class="size-9" aria-label="Plans" as-child>
+            <NuxtLink to="/plan-designer"><NotebookPenIcon class="size-4" /></NuxtLink>
           </UiButton>
           <UiButton variant="ghost" size="icon" class="size-9" aria-label="Bank accounts" as-child>
             <NuxtLink to="/bank_accounts"><LandmarkIcon class="size-4" /></NuxtLink>
