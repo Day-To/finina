@@ -1,25 +1,25 @@
 // Pure builder for the full end-to-end money map (rendered with Vue Flow). No
 // Vue / Firebase import — testable in plain JS, mirroring useFlowGraph.js. Splices
-// the two existing trees at the surplus join so EVERY item is a node:
+// the two trees at the surplus join so EVERY item is a node:
 //   Income → bank accounts → each expense/surplus line → investment pools →
 //   buckets / direct funds → every individual fund & stock.
-// Conservation: income → {accounts, unassigned, kept} sums to income; the
-// investment chain is a continuation of the pool nodes (no double count).
+// Direct-to-holding surplus lines bypass the pool: they edge straight to their
+// specific fund/stock leaf (counted = emerald solid; Parked = green dashed + badge).
+// Conservation: income → {accounts, unassigned, kept} sums to income; the pool
+// chain is a continuation of the pool nodes (no double count).
 
 import { surplusAmounts, sourceAmountMap, investmentPools, investmentBreakdown } from '../domain/calc/index.js'
 import { flattenAssignment, deriveFlow, reconcileSummary } from './useFlowGraph.js'
 
 // Semantic finance families (see CLAUDE.md "Color hierarchy"): transfer = blue
 // (income + accounts), spend = red (expenses), saving = green, investment =
-// emerald (mutual funds + stocks as two emerald shades). 'warn' is an
-// out-of-family attention state (unassigned / unrouted).
+// emerald (mutual funds + stocks as two emerald shades). 'warn' = attention.
 const C = {
   income: 'var(--auto)', account: 'var(--transfer-2)', transfer: 'var(--transfer-2)',
   expense: 'var(--negative)', save: 'var(--positive)',
   mf: 'var(--invest)', stocks: 'var(--invest-2)',
   idle: 'var(--muted-foreground)', warn: '#f43f5e',
 }
-// Left→right columns.
 const X = { income: 0, account: 320, item: 690, pool: 1080, bucket: 1430, fund: 1780 }
 const NODE_H = 66
 const ROW = 96 // vertical slot per leaf (node + gap)
@@ -33,29 +33,31 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
   const income = Math.max(0, month.income ?? 0)
   const nameOf = (id) => (accountsById?.get ? accountsById.get(id)?.name : accounts.find((a) => a.id === id)?.name) || 'Account'
 
-  const fixedIds = new Set((month.fixedExpenses || []).map((l) => l.id))
-  const varIds = new Set((month.variableExpenses || []).map((l) => l.id))
   const sAmts = surplusAmounts(month)
-  const targetById = new Map(sAmts.map((s) => [s.id, s.target || null]))
   const amountOf = sourceAmountMap(month)
   const assignment = flattenAssignment(month.flow)
   const bd = investmentBreakdown(month, registry)
+
+  // Direct-target lookups (name + validity per type), from the breakdown.
+  const nameByFund = new Map()
+  const validDirect = { mf: new Set(), stocks: new Set() }
+  for (const d of bd.mf.direct) { nameByFund.set(d.fundId, d.name); validDirect.mf.add(d.fundId) }
+  for (const d of bd.stocks.direct) { nameByFund.set(d.fundId, d.name); validDirect.stocks.add(d.fundId) }
 
   // Every allocatable line as a graph item.
   const items = []
   for (const l of month.fixedExpenses || []) items.push({ id: l.id, label: l.item || 'Fixed', amount: amountOf.get(l.id) || 0, type: 'fixed' })
   for (const l of month.variableExpenses || []) items.push({ id: l.id, label: l.item || 'Variable', amount: amountOf.get(l.id) || 0, type: 'variable', daily: !!l.isDailyBudget })
   for (const s of sAmts) {
-    const t = targetById.get(s.id)
-    items.push({ id: s.id, label: s.item || 'Surplus', amount: s.amount, type: t === 'MUTUAL_FUNDS' ? 'mf' : t === 'STOCKS' ? 'stocks' : 'save' })
+    const t = s.target
+    const type = t === 'MUTUAL_FUNDS' ? 'mf' : t === 'STOCKS' ? 'stocks' : 'save'
+    const fundId = (type !== 'save' && s.targetFundId) ? s.targetFundId : null
+    items.push({ id: s.id, label: s.item || 'Surplus', amount: s.amount, type, fundId, counted: s.countAsInvestment !== false })
   }
   const d = deriveFlow(items, accounts, month.flow)
 
   const nodes = []
   const edges = []
-  // % of income — shown on every node and on each flow edge. Up to 2 decimals,
-  // trailing zeros trimmed (12 → "12%", 12.5 → "12.5%", 0.43 → "0.43%"); a
-  // non-zero amount under 0.01% shows "<0.01%" rather than collapsing to "0%".
   const pctText = (amt) => {
     if (!income || amt <= 0) return ''
     const p = (amt / income) * 100
@@ -66,9 +68,6 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
     id: n.id, type: 'money', position: { x: n.x, y: n.y }, draggable: true,
     data: { kind: n.kind, eyebrow: n.eyebrow, label: n.label, amount: n.amount, currency, pct: pctText(n.amount), sub: n.sub, accent: n.accent, badge: n.badge, dim: n.dim },
   })
-  // Edge thickness encodes magnitude (kept in a sane range so it never overwhelms
-  // the nodes); the % of income rides on the edge as a label. No arrowheads — the
-  // layout is strictly left→right.
   const wOf = (amt) => Math.max(1.4, Math.min(6, 1.2 + (amt / Math.max(1, income)) * 7))
   const addEdge = (from, to, amt, color, animated = false) => {
     if (amt <= 0) return
@@ -83,6 +82,23 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
     })
   }
   const fundBadge = (id) => (archivedFundIds.has(id) ? 'Archived' : pausedFundIds.has(id) ? 'paused' : undefined)
+
+  // Money's COLOUR is its nature; direct money lands in a fund but a PARKED line is
+  // saving (green). Counted direct + pool investment = emerald.
+  const itemAccent = (it) => {
+    if (it.type === 'fixed' || it.type === 'variable') return C.expense
+    if (it.type === 'save') return C.save
+    if (it.fundId && !it.counted) return C.save // parked
+    return it.type === 'stocks' ? C.stocks : C.mf
+  }
+  const itemEyebrow = (it) => {
+    if (it.type === 'fixed') return 'Fixed'
+    if (it.type === 'variable') return it.daily ? 'Daily' : 'Variable'
+    if (it.type === 'save') return 'Savings'
+    if (it.fundId) return `→ ${nameByFund.get(it.fundId) || 'Fund'}${it.counted ? '' : ' · Parked'}`
+    return it.type === 'mf' ? '→ Mutual Funds' : '→ Stocks'
+  }
+  const itemBadge = (it) => (it.fundId && !it.counted ? 'Parked' : it.daily ? 'Daily' : undefined)
 
   // ── Left tree: income → accounts → items ───────────────────────────────────
   const itemsByAcc = new Map()
@@ -102,7 +118,6 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
   const totalSources = items.reduce((s, i) => s + i.amount, 0)
   const kept = income - totalSources
 
-  const itemAccent = (it) => (it.type === 'fixed' || it.type === 'variable') ? C.expense : it.type === 'save' ? C.save : it.type === 'mf' ? C.mf : C.stocks
   let cursor = 0
   for (const g of groups) {
     const band = Math.max(1, g.items.length) * ROW
@@ -112,9 +127,8 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
     addEdge('income', accId, accAmt, g.warn ? C.warn : C.transfer, true)
     g.items.forEach((it, i) => {
       const accent = itemAccent(it)
-      const eyebrow = it.type === 'fixed' ? 'Fixed' : it.type === 'variable' ? (it.daily ? 'Daily' : 'Variable') : it.type === 'save' ? 'Savings' : it.type === 'mf' ? '→ Mutual Funds' : '→ Stocks'
       const kind = (it.type === 'fixed' || it.type === 'variable') ? 'expense' : it.type === 'save' ? 'save' : it.type
-      addNode({ id: it.id, x: X.item, y: cursor + i * ROW + (ROW - NODE_H) / 2, kind, eyebrow, label: it.label, amount: it.amount, accent, badge: it.daily ? 'Daily' : undefined })
+      addNode({ id: it.id, x: X.item, y: cursor + i * ROW + (ROW - NODE_H) / 2, kind, eyebrow: itemEyebrow(it), label: it.label, amount: it.amount, accent, badge: itemBadge(it) })
       addEdge(accId, it.id, it.amount, accent)
     })
     cursor += band
@@ -130,6 +144,7 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
   // ── Right forest: pools → buckets / direct funds → fund & stock leaves ──────
   const fNodes = []
   const fEdges = []
+  const leafIndex = new Map() // `${poolId}:${fundId}` -> leaf node (for merge)
   let fc = 0
   let fundCount = 0
   const buildPool = (poolId, b, accent, label) => {
@@ -139,9 +154,10 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
       if (r.amount <= 0) continue
       if (r.kind === 'fund') {
         const leaf = b.holdings.find((h) => h.allocId === r.id)
-        const lid = `lf-${poolId}-${r.id}`
-        fNodes.push({ id: lid, x: X.fund, y: fc + (ROW - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', eyebrow: 'Direct', label: leaf?.name || 'Fund', amount: r.amount, accent, badge: leaf ? fundBadge(leaf.id) : undefined, dim: !leaf })
-        fEdges.push({ from: `pool-${poolId}`, to: lid, amt: r.amount, color: accent })
+        const node = { id: `lf-${poolId}-${r.id}`, x: X.fund, y: fc + (ROW - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', eyebrow: 'Direct', label: leaf?.name || 'Fund', amount: r.amount, accent, badge: leaf ? fundBadge(leaf.id) : undefined, dim: !leaf }
+        fNodes.push(node)
+        if (leaf) leafIndex.set(`${poolId}:${leaf.id}`, node)
+        fEdges.push({ from: `pool-${poolId}`, to: node.id, amt: r.amount, color: accent })
         fundCount++
         fc += ROW
       }
@@ -152,9 +168,10 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
         fNodes.push({ id: bid, x: X.bucket, y: fc + band / 2 - NODE_H / 2, kind: 'bucket', eyebrow: 'Goal', label: r.bucket || 'Unbucketed', amount: r.amount, accent })
         fEdges.push({ from: `pool-${poolId}`, to: bid, amt: r.amount, color: accent })
         leaves.forEach((h, i) => {
-          const lid = `lf-${poolId}-${r.id}-${h.id}`
-          fNodes.push({ id: lid, x: X.fund, y: fc + i * ROW + (ROW - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', label: h.name, amount: h.amount, accent, badge: fundBadge(h.id), dim: archivedFundIds.has(h.id) })
-          fEdges.push({ from: bid, to: lid, amt: h.amount, color: accent })
+          const node = { id: `lf-${poolId}-${r.id}-${h.id}`, x: X.fund, y: fc + i * ROW + (ROW - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', label: h.name, amount: h.amount, accent, badge: fundBadge(h.id), dim: archivedFundIds.has(h.id) }
+          fNodes.push(node)
+          leafIndex.set(`${poolId}:${h.id}`, node)
+          fEdges.push({ from: bid, to: node.id, amt: h.amount, color: accent })
           fundCount++
         })
         fc += band
@@ -175,13 +192,43 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
   buildPool('mf', bd.mf, C.mf, 'Mutual Funds')
   buildPool('stocks', bd.stocks, C.stocks, 'Stocks')
 
+  // ── Direct routings: each direct surplus item → its specific fund leaf ──────
+  for (const it of items.filter((x) => x.fundId)) {
+    const poolId = it.type // 'mf' | 'stocks'
+    const accent = poolId === 'stocks' ? C.stocks : C.mf
+    const key = `${poolId}:${it.fundId}`
+    let leaf = leafIndex.get(key)
+    if (!leaf && validDirect[poolId]?.has(it.fundId)) {
+      leaf = { id: `lf-direct-${poolId}-${it.fundId}`, x: X.fund, y: fc + (ROW - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', eyebrow: 'Direct', label: nameByFund.get(it.fundId) || 'Fund', amount: 0, accent, badge: fundBadge(it.fundId) }
+      fNodes.push(leaf)
+      leafIndex.set(key, leaf)
+      fundCount++
+      fc += ROW
+    }
+    if (leaf) {
+      leaf.amount += it.amount // a fund may get pool + direct (and several direct lines)
+      if (!it.counted && !leaf.badge) leaf.badge = 'Parked'
+      // counted = emerald solid; parked = green dashed (its money is saving).
+      fEdges.push({ from: it.id, to: leaf.id, amt: it.amount, color: it.counted ? accent : C.save, animated: !it.counted })
+    }
+    else {
+      // direct route to a fund missing from this month → visible attention node
+      const wid = `lf-invalid-${it.id}`
+      fNodes.push({ id: wid, x: X.fund, y: fc + (ROW - NODE_H) / 2, kind: 'warn', eyebrow: 'Attention', label: 'Fund not found', amount: it.amount, accent: C.warn })
+      fEdges.push({ from: it.id, to: wid, amt: it.amount, color: C.warn, animated: true })
+      fc += ROW
+    }
+  }
+
   const forestH = Math.max(fc, 0)
   const offset = leftH / 2 - forestH / 2
   for (const n of fNodes) { n.y += offset; addNode(n) }
-  for (const e of fEdges) addEdge(e.from, e.to, e.amt, e.color)
+  for (const e of fEdges) addEdge(e.from, e.to, e.amt, e.color, e.animated)
 
-  // cross edges: each investment-routed item → its pool
+  // cross edges: each POOL-routed investment item → its pool node (direct items
+  // already edge to their leaf above).
   for (const it of items) {
+    if (it.fundId) continue
     if (it.type === 'mf') addEdge(it.id, 'pool-mf', it.amount, C.mf, true)
     else if (it.type === 'stocks') addEdge(it.id, 'pool-stocks', it.amount, C.stocks, true)
   }

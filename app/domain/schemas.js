@@ -50,6 +50,13 @@ export const surplusLineSchema = z
     value: z.number().nonnegative(),
     // Route this surplus line into an investment pool instead of the bank flow.
     target: z.enum(['MUTUAL_FUNDS', 'STOCKS']).nullable().default(null),
+    // Route DIRECTLY to one holding (fund/stock id) instead of the pool's spread.
+    // Null = pool route (or none). Its kind is implied by `target`. Ignored if target null.
+    targetFundId: recordId.nullable().default(null),
+    // A routed line counts as an investment (emerald) by default. false = "Parked":
+    // money still flows to the holding but is tracked as saving (green), excluded
+    // from investment totals. Only meaningful for direct (targetFundId) routes.
+    countAsInvestment: z.boolean().default(true),
     order: order.default(0),
     source: lineSource.optional(),
   })

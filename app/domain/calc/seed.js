@@ -59,7 +59,11 @@ export function buildMonthSeed(monthlyVersion, yearlyVersion, monthId, currency,
     id: remap(l.id), item: l.item, amount: l.amount, isDailyBudget: !!l.isDailyBudget, order: l.order ?? i, source: 'MONTHLY',
   }))
   const surplusFromMonthly = (monthlyVersion?.surplus ?? []).map((l, i) => ({
-    id: remap(l.id), item: l.item, mode: l.mode, value: l.value, target: l.target ?? null, order: l.order ?? i, source: 'MONTHLY',
+    // targetFundId is a HOLDING id (preserved verbatim in the frozen snapshot) — it
+    // must NOT be remapped through idMap (that only remaps line ids).
+    id: remap(l.id), item: l.item, mode: l.mode, value: l.value, target: l.target ?? null,
+    targetFundId: l.targetFundId ?? null, countAsInvestment: l.countAsInvestment ?? true,
+    order: l.order ?? i, source: 'MONTHLY',
   }))
 
   // Snapshot the reusable investment routing plan into the month (deep copy so

@@ -3,7 +3,7 @@
 // investing snapshot.
 import { computed } from 'vue'
 import { TrendingUpIcon, LineChartIcon, PlusIcon, ChevronRightIcon } from '@lucide/vue'
-import { investmentPools } from '@/domain/calc/index.js'
+import { investmentPools, investedTotal } from '@/domain/calc/index.js'
 import { currentMonthId } from '@/lib/dates.js'
 
 const inv = useInvestments()
@@ -17,12 +17,15 @@ const previews = computed(() => [
   { key: 'stocks', to: '/investments/stocks', label: 'Stocks flow', pool: pools.value.stocks, routing: planStore.stockRouting.value, holdings: inv.stocks.value },
 ].filter((p) => p.holdings.length))
 
+// pool-only — drives the flow preview's spread tree
 const pools = computed(() => (month.value ? investmentPools(month.value) : { mf: 0, stocks: 0 }))
-const hasPools = computed(() => pools.value.mf > 0 || pools.value.stocks > 0)
+// total invested this month = pool + counted direct routings (incl. direct-to-fund)
+const invested = computed(() => (month.value ? investedTotal(month.value) : { mf: 0, stocks: 0, total: 0 }))
+const hasPools = computed(() => invested.value.total > 0)
 
 const cards = computed(() => [
-  { to: '/investments/mutual-funds', icon: TrendingUpIcon, title: 'Mutual Funds', count: inv.mutualFunds.value.length, buckets: inv.bucketNamesFor('mutualFund').length, pool: pools.value.mf },
-  { to: '/investments/stocks', icon: LineChartIcon, title: 'Stocks', count: inv.stocks.value.length, buckets: inv.bucketNamesFor('stock').length, pool: pools.value.stocks },
+  { to: '/investments/mutual-funds', icon: TrendingUpIcon, title: 'Mutual Funds', count: inv.mutualFunds.value.length, buckets: inv.bucketNamesFor('mutualFund').length, pool: invested.value.mf },
+  { to: '/investments/stocks', icon: LineChartIcon, title: 'Stocks', count: inv.stocks.value.length, buckets: inv.bucketNamesFor('stock').length, pool: invested.value.stocks },
 ])
 </script>
 
@@ -89,9 +92,9 @@ const cards = computed(() => [
         <UiCardContent class="flex flex-wrap items-center justify-between gap-3 py-4">
           <div class="flex items-center gap-2 text-sm">
             <span class="text-muted-foreground">Investing this month:</span>
-            <span class="flex items-center gap-1">MF <MoneyValue :amount="pools.mf" :currency="currency" variant="total" /></span>
+            <span class="flex items-center gap-1">MF <MoneyValue :amount="invested.mf" :currency="currency" variant="total" /></span>
             <span class="text-muted-foreground">·</span>
-            <span class="flex items-center gap-1">Stocks <MoneyValue :amount="pools.stocks" :currency="currency" variant="total" /></span>
+            <span class="flex items-center gap-1">Stocks <MoneyValue :amount="invested.stocks" :currency="currency" variant="total" /></span>
           </div>
           <UiButton variant="link" as-child><NuxtLink :to="`/months/${monthId}`">View in month →</NuxtLink></UiButton>
         </UiCardContent>

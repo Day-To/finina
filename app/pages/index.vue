@@ -3,7 +3,7 @@
 // where this month's income goes, a month-on-month trend, and recent expenses.
 import { computed, ref } from 'vue'
 import { CalendarPlusIcon, PlusIcon, ArrowRightIcon } from '@lucide/vue'
-import { totalExpenses, surplus, investmentPools } from '@/domain/calc/index.js'
+import { totalExpenses, surplus, investedTotal } from '@/domain/calc/index.js'
 import { fromMinor } from '@/domain/money.js'
 import { formatMonthLabel, shortMonthLabel, formatDateLabel, elapsedDaysInMonth } from '@/lib/dates.js'
 
@@ -18,11 +18,7 @@ const monthLabel = computed(() => formatMonthLabel(thisMonthId.value, locale.val
 const incomeAmount = computed(() => currentMonth.value?.income ?? 0)
 const expensesAmount = computed(() => (currentMonth.value ? totalExpenses(currentMonth.value) : 0))
 const surplusAmount = computed(() => (currentMonth.value ? surplus(currentMonth.value) : 0))
-const investedAmount = computed(() => {
-  if (!currentMonth.value) return 0
-  const p = investmentPools(currentMonth.value)
-  return p.mf + p.stocks
-})
+const investedAmount = computed(() => (currentMonth.value ? investedTotal(currentMonth.value).total : 0))
 const savingsRate = computed(() => (incomeAmount.value > 0 ? surplusAmount.value / incomeAmount.value : 0))
 
 // Expenses delta -> "+12% vs last month".

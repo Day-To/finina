@@ -3,7 +3,7 @@
 // charts. No Vue, no Firebase. Assumes a consistent currency across months (v1).
 
 import { totalExpenses, surplus, surplusAmounts } from './totals.js'
-import { investmentPools, investmentBreakdown } from './investments.js'
+import { investedTotal, investmentBreakdown } from './investments.js'
 
 const byMonthAsc = (a, b) => (a.month < b.month ? -1 : a.month > b.month ? 1 : 0)
 const sumBy = (arr, f) => (arr ?? []).reduce((s, x) => s + (f(x) || 0), 0)
@@ -19,8 +19,8 @@ export function monthlySeries(months) {
     const fixed = sumBy(m.fixedExpenses, (l) => l.amount)
     const variable = sumBy(m.variableExpenses, (l) => l.amount)
     const sp = surplus(m)
-    const pools = investmentPools(m)
-    const invested = pools.mf + pools.stocks
+    const it = investedTotal(m)
+    const invested = it.total
     return {
       month: m.month,
       income,
@@ -29,8 +29,8 @@ export function monthlySeries(months) {
       variable,
       surplus: sp,
       savingsRate: income > 0 ? sp / income : 0,
-      mf: pools.mf,
-      stocks: pools.stocks,
+      mf: it.mf,
+      stocks: it.stocks,
       invested,
       // Share of income routed to investments this month ("investing rate").
       investRate: income > 0 ? invested / income : 0,
@@ -122,14 +122,18 @@ export function investedByType(months) {
 export function investedByBucket(months, registry) {
   const map = new Map()
   // The per-fund leaves don't carry `kind`, so tag it from which side they came.
-  const add = (h, kind) => {
-    const name = (h.bucket || '').trim() || (kind === 'stock' ? 'Stocks' : 'Unbucketed')
-    map.set(name, (map.get(name) || 0) + (h.amount || 0))
+  const addAmt = (bucket, kind, amt) => {
+    if (!amt) return // skip zero (e.g. parked direct has investAmount 0) — no noise buckets
+    const name = (bucket || '').trim() || (kind === 'stock' ? 'Stocks' : 'Unbucketed')
+    map.set(name, (map.get(name) || 0) + amt)
   }
   for (const m of months ?? []) {
     const b = investmentBreakdown(m, registry)
-    for (const h of b.mf.holdings) add(h, 'mutualFund')
-    for (const h of b.stocks.holdings) add(h, 'stock')
+    for (const h of b.mf.holdings) addAmt(h.bucket, 'mutualFund', h.amount)
+    for (const h of b.stocks.holdings) addAmt(h.bucket, 'stock', h.amount)
+    // Counted direct routings invest into their holding's bucket too.
+    for (const d of b.mf.direct) addAmt(d.bucket, 'mutualFund', d.investAmount)
+    for (const d of b.stocks.direct) addAmt(d.bucket, 'stock', d.investAmount)
   }
   return [...map.entries()].map(([bucket, amount]) => ({ bucket, amount })).sort((a, b) => b.amount - a.amount)
 }

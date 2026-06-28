@@ -77,9 +77,18 @@ const fixedGroups = computed(() => groupExpenses('fixedExpenses'))
 const variableGroups = computed(() => groupExpenses('variableExpenses'))
 
 const breakdown = computed(() => (working.value ? investmentBreakdown(working.value, props.registry) : null))
-// dkey = allocId:fundId — a fund can appear under more than one allocation row.
-const mfItems = computed(() => (breakdown.value?.mf.holdings ?? []).filter((h) => h.amount > 0).map((h) => ({ ...h, dkey: h.allocId + ':' + h.id })))
-const stockItems = computed(() => (breakdown.value?.stocks.holdings ?? []).filter((h) => h.amount > 0).map((h) => ({ ...h, dkey: h.allocId + ':' + h.id })))
+// Move-list = pool spread leaves + DIRECT routings (you physically move parked
+// money too). dkey is stable + collision-free: pool = allocId:fundId; direct =
+// direct:fundId. `investAmount` (≤ amount) feeds the counted-only "Invested" stat.
+const sideItems = (side) => {
+  const b = breakdown.value?.[side]
+  if (!b) return []
+  const pool = (b.holdings ?? []).filter((h) => h.amount > 0).map((h) => ({ name: h.name, amount: h.amount, investAmount: h.amount, dkey: `${h.allocId}:${h.id}` }))
+  const direct = (b.direct ?? []).filter((dd) => dd.amount > 0).map((dd) => ({ name: dd.name, amount: dd.amount, investAmount: dd.investAmount, parked: dd.investAmount === 0, partParked: dd.investAmount > 0 && dd.parked > 0, dkey: `direct:${dd.fundId}` }))
+  return [...pool, ...direct]
+}
+const mfItems = computed(() => sideItems('mf'))
+const stockItems = computed(() => sideItems('stocks'))
 
 const ACCENT = { transfers: 'var(--auto)', fixed: 'var(--negative)', variable: 'var(--negative)', mf: 'var(--positive)', stocks: 'var(--positive)', checklist: 'var(--primary)' }
 const steps = computed(() => {
@@ -166,7 +175,8 @@ watch(progress, (v) => tweenPct(v))
 
 // ── Intro + milestone + finale summaries ──────────────────────────────────────
 const toMove = computed(() => transferItems.value.reduce((s, t) => s + t.amount, 0))
-const investedTotal = computed(() => [...mfItems.value, ...stockItems.value].reduce((s, f) => s + f.amount, 0))
+// "Invested" stat is counted-only (parked direct money is moved but tracked as saving).
+const investedTotal = computed(() => [...mfItems.value, ...stockItems.value].reduce((s, f) => s + (f.investAmount ?? f.amount), 0))
 
 const stepSummary = computed(() => {
   switch (step.value?.key) {
@@ -392,7 +402,10 @@ onBeforeUnmount(() => { clearTimeout(advanceTimer); cancelAnimationFrame(rafId);
                     <button type="button" class="group flex w-full items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all duration-200 hover:border-foreground/25" :class="!isDone((step.key === 'mf' ? 'mf:' : 'st:') + f.dkey) && 'border-border'" :style="isDone((step.key === 'mf' ? 'mf:' : 'st:') + f.dkey) ? { borderColor: stepAccent, background: tint(stepAccent, 8) } : {}" @click="toggle((step.key === 'mf' ? 'mf:' : 'st:') + f.dkey)">
                       <span class="grid size-11 shrink-0 place-items-center rounded-xl" :style="{ background: tint(stepAccent, 14), color: stepAccent }"><CoinsIcon class="size-5" /></span>
                       <span class="min-w-0 flex-1">
-                        <span class="block truncate text-base font-semibold">{{ f.name }}</span>
+                        <span class="flex items-center gap-1.5">
+                          <span class="truncate text-base font-semibold">{{ f.name }}</span>
+                          <span v-if="f.parked || f.partParked" class="shrink-0 rounded-full border border-positive/40 bg-positive/10 px-1.5 py-0.5 text-[10px] font-medium text-positive">{{ f.partParked ? 'Part parked' : 'Parked' }}</span>
+                        </span>
                         <span v-if="f.bucket" class="block truncate text-xs text-muted-foreground">{{ f.bucket }}</span>
                       </span>
                       <MoneyValue :amount="f.amount" :currency="currency" variant="total" class="shrink-0 text-lg font-bold" />

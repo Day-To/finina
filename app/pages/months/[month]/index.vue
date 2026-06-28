@@ -6,7 +6,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { CalendarPlusIcon, FilePlusIcon, RefreshCwIcon, SaveIcon, ReceiptIcon, SparklesIcon, LayoutDashboardIcon, CalendarDaysIcon, WalletIcon, SlidersHorizontalIcon, TrendingUpIcon } from '@lucide/vue'
-import { surplus, surplusAmounts, dailyBudget, accountTransfers, autoTransferTodos, investmentPools, investmentBreakdown, autoInvestmentTodos, totalExpenses, totalFixed, totalVariable } from '@/domain/calc/index.js'
+import { surplus, surplusAmounts, dailyBudget, accountTransfers, autoTransferTodos, investmentPools, investmentBreakdown, investedTotal, directRoutings, autoInvestmentTodos, totalExpenses, totalFixed, totalVariable } from '@/domain/calc/index.js'
 import { newId } from '@/domain/ids.js'
 import { formatMonthLabel } from '@/lib/dates.js'
 
@@ -102,7 +102,9 @@ const isDeficit = computed(() => surplusPool.value < 0)
 
 // Top summary strip (Income · Expenses · Investment · Surplus) — mirrors the sheet.
 const expensesTotal = computed(() => (draft.value ? totalExpenses(draft.value) : 0))
-const investmentTotal = computed(() => pools.value.mf + pools.value.stocks)
+// "Invested" = counted money (pool + counted direct); the KPI/insights number.
+const invested = computed(() => (draft.value ? investedTotal(draft.value) : { mf: 0, stocks: 0, total: 0 }))
+const investmentTotal = computed(() => invested.value.total)
 const pctOfIncome = (v) => (draft.value?.income ? Math.round((v / draft.value.income) * 1000) / 10 : 0)
 const flowSources = computed(() => {
   if (!draft.value) return []
@@ -116,9 +118,18 @@ const flowSources = computed(() => {
 
 // Investment pools + the per-fund/stock breakdown for this month.
 const pools = computed(() => (draft.value ? investmentPools(draft.value) : { mf: 0, stocks: 0 }))
-const hasInvestments = computed(() => pools.value.mf > 0 || pools.value.stocks > 0)
+const directs = computed(() => (draft.value ? directRoutings(draft.value) : []))
+const hasInvestments = computed(() => pools.value.mf > 0 || pools.value.stocks > 0 || directs.value.length > 0)
 const invBreakdown = computed(() => (draft.value ? investmentBreakdown(draft.value, investments.value) : null))
 const invListOpen = ref({ mf: false, stocks: false }) // per-pool "Edit as list" disclosure
+
+// Holdings offered in the surplus routing picker = this month's FROZEN snapshot
+// (so a pick stays valid), falling back to the live registry for a blank month.
+const routableHoldings = computed(() => {
+  const snap = draft.value?.investments?.holdings ?? []
+  if (snap.length) return snap
+  return [...mutualFunds.value, ...stocks.value].map((h) => ({ id: h.id, kind: h.kind, name: h.name ?? '', active: h.active !== false }))
+})
 
 // Editors distribute over the month's FROZEN holdings snapshot (past-invariant);
 // blank/no-snapshot months fall back to the live ACTIVE registry so routing can
@@ -134,7 +145,7 @@ const editorHoldings = (kind) => {
 const invTypes = computed(() => [
   { key: 'mf', kind: 'mutualFund', label: 'Mutual Funds', accent: 'var(--invest)', route: 'mutual-funds', pool: pools.value.mf, breakdown: invBreakdown.value?.mf },
   { key: 'stocks', kind: 'stock', label: 'Stocks', accent: 'var(--invest-2)', route: 'stocks', pool: pools.value.stocks, breakdown: invBreakdown.value?.stocks },
-].filter((t) => t.pool > 0))
+].filter((t) => t.pool > 0 || t.breakdown?.direct?.length || t.breakdown?.invalidDirect?.length))
 
 // Checklist completion (display only — never feeds dirty/comparable).
 const checklistProgress = computed(() => {
@@ -187,7 +198,12 @@ function syncAutoTodos() {
   if (autoSig(next) !== autoSig(cur)) draft.value = { ...m, checklist: next }
 }
 
-watch([transferSignature, () => `${pools.value.mf}:${pools.value.stocks}`], syncAutoTodos)
+// Regenerate the "Move X to <type>" auto-todos when pool OR direct routing amounts
+// change (incl. flipping count-as-investment, since parked money is still moved).
+const investmentSignature = computed(() =>
+  `${pools.value.mf}:${pools.value.stocks}|${directs.value.map((d) => `${d.fundId}:${d.amount}`).sort().join(',')}`,
+)
+watch([transferSignature, investmentSignature], syncAutoTodos)
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 const busy = ref(false)
@@ -489,7 +505,7 @@ async function confirmResync() {
             <UiCardDescription>Allocating a surplus of <MoneyValue :amount="surplusPool" :currency="currency" variant="auto" />.</UiCardDescription>
           </UiCardHeader>
           <UiCardContent>
-            <PercentSplitControl v-model="draft.surplus" :currency="currency" :surplus-pool="surplusPool" :new-row="() => ({ source: 'MANUAL' })" allow-routing />
+            <PercentSplitControl v-model="draft.surplus" :currency="currency" :surplus-pool="surplusPool" :holdings="routableHoldings" :new-row="() => ({ source: 'MANUAL' })" allow-routing />
           </UiCardContent>
         </UiCard>
 
@@ -524,7 +540,7 @@ async function confirmResync() {
             :accent="t.accent"
             :route="t.route"
             :pool="t.pool"
-            :pct="pctOfIncome(t.pool)"
+            :pct="pctOfIncome(t.pool + (t.breakdown?.directTotal || 0))"
             :breakdown="t.breakdown"
             :currency="currency"
             :holdings="editorHoldings(t.kind)"
@@ -566,6 +582,7 @@ async function confirmResync() {
           <p v-if="resync.diff.holdingsDropped" class="text-muted-foreground">Re-syncing rebuilds this month from your current funds — any fund archived since you created it drops off this month's split. Past months you don't re-sync keep showing it.</p>
           <p v-if="resync.diff.incomeChanged" class="text-muted-foreground">Income will change.</p>
           <p v-if="resync.diff.manualPreserved" class="text-muted-foreground">{{ resync.diff.manualPreserved }} manual row(s) preserved.</p>
+          <p v-if="directs.length" class="text-muted-foreground">Any direct-to-fund routings (incl. Parked) set this month will be replaced by your plan's pool routing.</p>
         </div>
         <UiAlertDialogFooter>
           <UiAlertDialogCancel :disabled="resync.busy">Cancel</UiAlertDialogCancel>

@@ -4,7 +4,7 @@
 // teases the macro split (spending / investing / saved); the map shows every node.
 import { ref, computed } from 'vue'
 import { Maximize2Icon, WaypointsIcon } from '@lucide/vue'
-import { totalExpenses, investmentPools, surplusAmounts } from '@/domain/calc/index.js'
+import { totalExpenses, investedTotal, surplusAmounts, directRoutings } from '@/domain/calc/index.js'
 
 const props = defineProps({
   month: { type: Object, default: null },
@@ -19,9 +19,15 @@ const props = defineProps({
 const open = ref(false)
 const income = computed(() => Math.max(0, props.month?.income ?? 0))
 const spending = computed(() => (props.month ? totalExpenses(props.month) : 0))
-const pools = computed(() => (props.month ? investmentPools(props.month) : { mf: 0, stocks: 0 }))
-const investing = computed(() => pools.value.mf + pools.value.stocks)
-const saved = computed(() => (props.month ? surplusAmounts(props.month).filter((s) => !s.target).reduce((a, s) => a + s.amount, 0) : 0))
+// Investing = counted money (pool + counted direct). Saved = non-routed surplus +
+// PARKED direct routings (money sent to a fund but tracked as saving).
+const investing = computed(() => (props.month ? investedTotal(props.month).total : 0))
+const saved = computed(() => {
+  if (!props.month) return 0
+  const nonRouted = surplusAmounts(props.month).filter((s) => !s.target).reduce((a, s) => a + s.amount, 0)
+  const parked = directRoutings(props.month).filter((dRoute) => !dRoute.counted).reduce((a, dRoute) => a + dRoute.amount, 0)
+  return nonRouted + parked
+})
 const pct = (v) => (income.value ? Math.round((v / income.value) * 100) : 0)
 
 const chips = computed(() => [

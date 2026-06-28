@@ -16,10 +16,51 @@ export function investmentPools(body) {
   let mf = 0
   let stocks = 0
   for (const s of surplusAmounts(body)) {
+    // Direct-to-holding routings are NOT pool money (they bypass the pool spread).
+    if (s.targetFundId) continue
     if (s.target === 'MUTUAL_FUNDS') mf += s.amount
     else if (s.target === 'STOCKS') stocks += s.amount
   }
   return { mf, stocks }
+}
+
+/**
+ * Surplus lines routed DIRECTLY to a specific holding (targetFundId set). Each is
+ * 100% to that fund/stock, bypassing the pool spread. `counted` = whether it's an
+ * investment (default true) vs "Parked" saving (false).
+ * @param {object} body
+ * @returns {Array<{id,item,fundId,kind:'mutualFund'|'stock',amount,counted}>}
+ */
+export function directRoutings(body) {
+  const out = []
+  for (const s of surplusAmounts(body)) {
+    if (!s.target || !s.targetFundId || s.amount <= 0) continue
+    out.push({
+      id: s.id, item: s.item, fundId: s.targetFundId,
+      kind: s.target === 'STOCKS' ? 'stock' : 'mutualFund',
+      amount: s.amount, counted: s.countAsInvestment !== false,
+    })
+  }
+  return out
+}
+
+/**
+ * Total money classified as INVESTMENT this month = pool-routed (always counted) +
+ * counted direct routings. Parked (countAsInvestment=false) direct money is excluded.
+ * This is the analytics/KPI "invested" number (distinct from investmentPools, which
+ * is pool-only and drives the per-type spread).
+ * @param {object} body
+ * @returns {{ mf:number, stocks:number, total:number }}
+ */
+export function investedTotal(body) {
+  const pools = investmentPools(body)
+  let { mf, stocks } = pools
+  for (const d of directRoutings(body)) {
+    if (!d.counted) continue
+    if (d.kind === 'stock') stocks += d.amount
+    else mf += d.amount
+  }
+  return { mf, stocks, total: mf + stocks }
 }
 
 /**
@@ -110,7 +151,7 @@ export function distributeToHoldings(rows, holdings) {
  * holdings reached by no bucket row and not solo-routed; invalidFundRows =
  * kind:'fund' rows whose fund is missing/paused (amount counted but not resolved).
  */
-export function investmentTypeBreakdown(pool, routing, holdings) {
+export function investmentTypeBreakdown(pool, routing, holdings, directFundIds = new Set()) {
   const dist = distributeAllocations(pool, routing)
   const active = (holdings ?? []).filter((h) => h.active !== false)
   const byId = new Map(active.map((h) => [h.id, h]))
@@ -121,7 +162,9 @@ export function investmentTypeBreakdown(pool, routing, holdings) {
   const stranded = dist.rows.filter((r) => r.kind === 'bucket' && !eligible(r.bucket)).map((r) => r.bucket)
   const invalidFundRows = dist.rows.filter((r) => r.kind === 'fund' && !byId.has(r.fundId)).map((r) => ({ id: r.id, fundId: r.fundId, amount: r.amount }))
   const emitted = new Set(perFund.map((h) => h.id))
-  const unrouted = active.filter((h) => !emitted.has(h.id) && !soloFundIds.has(h.id))
+  // A fund that receives a DIRECT surplus routing isn't "unrouted" from the pool's
+  // perspective — it just gets its money from a direct line, not the spread.
+  const unrouted = active.filter((h) => !emitted.has(h.id) && !soloFundIds.has(h.id) && !directFundIds.has(h.id))
 
   const total = dist.rows.reduce((s, r) => s + r.amount, 0)
   const resolvedTotal = perFund.reduce((s, h) => s + h.amount, 0)
@@ -141,9 +184,39 @@ export function investmentBreakdown(month, registry) {
   // A frozen month uses its snapshot verbatim (even when empty); only a legacy
   // month (no snapshot ever taken) falls back to the live registry.
   const src = inv?.holdingsFrozen ? (inv.holdings ?? []) : ((inv?.holdings?.length) ? inv.holdings : (registry ?? []))
+  const directs = directRoutings(month)
+
+  // The pool spread stays EXACTLY as before (pool/total/resolvedTotal/holdings/
+  // stranded/unrouted/balanced inputs are pool-only). Direct routings are carried
+  // as a SEPARATE structure so card invariants (total===pool===resolvedTotal) hold.
+  const side = (kind, poolAmt, routing) => {
+    const sideSrc = src.filter((h) => h.kind === kind)
+    const sideDirect = directs.filter((d) => d.kind === kind)
+    const directFundIds = new Set(sideDirect.map((d) => d.fundId))
+    const base = investmentTypeBreakdown(poolAmt, routing ?? [], sideSrc, directFundIds)
+
+    // Resolve direct lines against the side's ACTIVE holdings (mirror pool semantics:
+    // paused/archived/missing → invalidDirect). Aggregate multiple lines per fund.
+    const byId = new Map(sideSrc.filter((h) => h.active !== false).map((h) => [h.id, h]))
+    const map = new Map()
+    const invalidDirect = []
+    for (const d of sideDirect) {
+      const h = byId.get(d.fundId)
+      if (!h) { invalidDirect.push({ id: d.id, fundId: d.fundId, amount: d.amount }); continue }
+      const cur = map.get(d.fundId) ?? { fundId: d.fundId, name: h.name ?? '', bucket: h.bucket ?? '', amount: 0, investAmount: 0 }
+      cur.amount += d.amount
+      if (d.counted) cur.investAmount += d.amount
+      map.set(d.fundId, cur)
+    }
+    const direct = [...map.values()].map((x) => ({ ...x, parked: x.amount - x.investAmount }))
+    const directTotal = direct.reduce((s, x) => s + x.amount, 0)
+    const directInvested = direct.reduce((s, x) => s + x.investAmount, 0)
+    return { ...base, direct, directTotal, directInvested, invalidDirect }
+  }
+
   return {
-    mf: investmentTypeBreakdown(pools.mf, month?.investments?.mf ?? [], src.filter((h) => h.kind === 'mutualFund')),
-    stocks: investmentTypeBreakdown(pools.stocks, month?.investments?.stocks ?? [], src.filter((h) => h.kind === 'stock')),
+    mf: side('mutualFund', pools.mf, month?.investments?.mf),
+    stocks: side('stock', pools.stocks, month?.investments?.stocks),
   }
 }
 
@@ -154,8 +227,13 @@ export function investmentBreakdown(month, registry) {
  */
 export function autoInvestmentTodos(body, currency) {
   const { mf, stocks } = investmentPools(body)
+  const directs = directRoutings(body)
+  // Action total = pool + ALL direct (counted AND parked) — you physically move
+  // parked money to the fund too; the counted/parked split is analytics-only.
+  const mfAction = mf + directs.filter((d) => d.kind === 'mutualFund').reduce((s, d) => s + d.amount, 0)
+  const stAction = stocks + directs.filter((d) => d.kind === 'stock').reduce((s, d) => s + d.amount, 0)
   const todos = []
-  if (mf > 0) todos.push({ id: newId(), label: `Make Mutual Funds investment — ${formatMoney(mf, currency)}`, isAuto: true, accountId: 'inv:mf', order: 0 })
-  if (stocks > 0) todos.push({ id: newId(), label: `Make Stocks investment — ${formatMoney(stocks, currency)}`, isAuto: true, accountId: 'inv:stocks', order: 0 })
+  if (mfAction > 0) todos.push({ id: newId(), label: `Move ${formatMoney(mfAction, currency)} to Mutual Funds`, isAuto: true, accountId: 'inv:mf', order: 0 })
+  if (stAction > 0) todos.push({ id: newId(), label: `Move ${formatMoney(stAction, currency)} to Stocks`, isAuto: true, accountId: 'inv:stocks', order: 0 })
   return todos
 }
