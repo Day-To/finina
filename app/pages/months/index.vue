@@ -122,22 +122,22 @@ async function confirmDelete() {
                     {{ m.seededFrom ? 'Planned' : 'Blank' }}
                   </UiBadge>
                 </div>
-                <div class="grid w-full grid-cols-2 gap-x-3 gap-y-2">
-                  <div class="flex flex-col gap-0.5">
+                <div class="grid w-full grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-x-3">
+                  <div class="flex min-w-0 flex-col gap-0.5">
                     <span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Income</span>
-                    <MoneyValue :amount="m.income ?? 0" :currency="m.currency || defaultCurrency" class="text-sm font-medium" />
+                    <MoneyValue :amount="m.income ?? 0" :currency="m.currency || defaultCurrency" class="truncate text-sm font-medium" />
                   </div>
-                  <div class="flex flex-col gap-0.5">
+                  <div class="flex min-w-0 flex-col gap-0.5">
                     <span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Expense</span>
-                    <MoneyValue :amount="totalExpenses(m)" :currency="m.currency || defaultCurrency" variant="negative" class="text-sm font-medium" />
+                    <MoneyValue :amount="totalExpenses(m)" :currency="m.currency || defaultCurrency" variant="negative" class="truncate text-sm font-medium" />
                   </div>
-                  <div class="flex flex-col gap-0.5">
+                  <div class="flex min-w-0 flex-col gap-0.5">
                     <span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Surplus</span>
-                    <MoneyValue :amount="surplus(m)" :currency="m.currency || defaultCurrency" variant="auto" class="text-sm font-medium" />
+                    <MoneyValue :amount="surplus(m)" :currency="m.currency || defaultCurrency" variant="auto" class="truncate text-sm font-medium" />
                   </div>
-                  <div class="flex flex-col gap-0.5">
+                  <div class="flex min-w-0 flex-col gap-0.5">
                     <span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Invested</span>
-                    <MoneyValue :amount="investedOf(m)" :currency="m.currency || defaultCurrency" variant="invest" class="text-sm font-medium" />
+                    <MoneyValue :amount="investedOf(m)" :currency="m.currency || defaultCurrency" variant="invest" class="truncate text-sm font-medium" />
                   </div>
                 </div>
               </NuxtLink>
