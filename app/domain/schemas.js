@@ -320,6 +320,31 @@ export const dailyExpenseSchema = dailyExpenseInputSchema.extend({
   createdAt: timestamp.optional(),
 })
 
+// ── AI Copilot chat ──────────────────────────────────────────────────────────
+
+export const chatRole = z.enum(['user', 'assistant'])
+
+// One message in a copilot thread (users/{uid}/chatThreads/{tid}/messages/{id}).
+// `seq` is a CLIENT-set monotonic order key (mirrors the `order` convention on
+// line items) so the UI orders deterministically even before serverTimestamp()
+// resolves — avoids the user/assistant pair flipping on first paint.
+export const chatMessageSchema = z.object({
+  id: recordId,
+  role: chatRole,
+  content: z.string().default(''),
+  status: z.enum(['complete', 'error']).default('complete'),
+  seq: z.number().int().nonnegative().default(0),
+  createdAt: timestamp.optional(),
+})
+
+// A conversation thread (users/{uid}/chatThreads/{tid}).
+export const chatThreadSchema = z.object({
+  id: recordId,
+  title: z.string().default(''),
+  createdAt: timestamp.optional(),
+  updatedAt: timestamp.optional(),
+})
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /**

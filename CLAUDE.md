@@ -88,7 +88,16 @@ Rules: **never** use a family's color for a different meaning (e.g. don't color 
 
 `server/api/expenses.{get,post}.js` writes/reads one user's daily expenses via the **Firebase Admin SDK**, configured entirely by env vars (`EXPENSE_API_UID`, optional `EXPENSE_API_TOKEN`, etc. — see `.env.example`). This is a drop-in for an old Apps Script webhook and **only works when deploying the Node server**, not with a static export. Amounts in this API are in **major** units; everything else in the app is minor units.
 
+## AI Copilot (`/api/ai/chat`)
+
+A read-only chat assistant ("Finina Copilot") available app-wide (FAB + `UiSheet` in `app/layouts/default.vue`). Uses **GPT (OpenAI Responses API)** with **server-side function tools** so the model fetches the user's real data on demand. Set `OPENAI_API_KEY` (+ optional knobs) in `.env` / Vercel env.
+
+- **Endpoint** `server/api/ai/chat.post.js`: verifies the caller's **Firebase ID token** (`adminAuth().verifyIdToken`) — `uid` comes only from the token, never the body — then enforces a **per-uid quota** (`server/utils/copilotQuota.js`, top-level `copilotUsage/{uid}`, denied to clients in `firestore.rules`), sanitizes the body, and **streams** the answer over SSE (`token`/`status`/`done`/`error`).
+- **Tool loop** `server/utils/openai.js` + **tools** `server/utils/copilotTools.js` / `copilotData.js`: 8 read-only tools (overview, month summary, daily spending, expenses, flow, investments, analytics, plan) that read `users/{uid}/…` via the Admin SDK and run the **pure `app/domain/calc/*`** functions. Every amount is `formatMoney`-formatted; aggregate tools flag `mixedCurrency` and never blend across currencies.
+- **Client**: `app/composables/useChat.js` (singleton; persists user/assistant messages, streams the reply), `app/repositories/chat.js` (`users/{uid}/chatThreads/{tid}/messages`, ordered by a client `seq`), `Copilot.vue` + `CopilotMessage.vue`. The system prompt is pure/testable (`app/domain/copilot/prompt.js`); tool arg schemas in `app/domain/copilot/tools.js`.
+- **Deploy**: runs as a Vercel Node serverless function (`nitro.vercel.functions.maxDuration` in `nuxt.config.js`); `/api/*` is already excluded from the PWA service worker. Read-only — no write tools in v1.
+
 ## Notes
 
 - Source comments reference spec sections like `(§5)`, `(§6)` — these point to an external design doc that is **not in the repo**. Don't try to resolve them against files here.
-- Deployment is Firebase Hosting (`firebase.json` serves `.output/public` with SPA rewrites to `/index.html`); project is set in `.firebaserc`.
+- Deployment is **Vercel** (Nitro builds with the Vercel preset; `server/api/*` run as Node serverless functions there, and env vars like `OPENAI_API_KEY` / the Firebase Admin creds are set in the Vercel project). `firebase.json` / `.firebaserc` are used for **Firestore rules** (`firebase deploy --only firestore:rules`), not for hosting the app.

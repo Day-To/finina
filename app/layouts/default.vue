@@ -217,5 +217,8 @@ async function completeOnboarding() {
 
     <!-- Global quick add-expense sheet (mobile "+") -->
     <ExpenseFormDialog v-model:open="quickAdd" :month-id="curMonthId" :month-doc="quickMonth" :on-save="quickSave" />
+
+    <!-- AI copilot: floating button + chat panel, available on every page. -->
+    <Copilot v-if="auth.isAuthenticated" />
   </div>
 </template>

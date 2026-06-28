@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
@@ -8,6 +9,22 @@ export default defineNuxtConfig({
   },
   ssr: false,
   modules: ['shadcn-nuxt', '@pinia/nuxt', '@vite-pwa/nuxt'],
+  // Deployed on Vercel: Nitro server routes (e.g. /api/ai/chat) run as Node
+  // serverless functions (NOT edge — SSE streaming needs the Node runtime, which
+  // is the Vercel preset's default). The AI copilot's tool loop + streaming can
+  // exceed the default 10s, so give the function headroom. Raise to 300 on
+  // Vercel Pro. This config is only consumed by the vercel preset (auto-applied
+  // on Vercel) and is harmless to local `pnpm build`/`dev`.
+  nitro: {
+    vercel: { functions: { maxDuration: 60 } },
+    // The Nitro server (e.g. /api/ai/chat) reuses the PURE domain core in
+    // app/domain. A relative `../../app/domain/...` import inlines fine in the
+    // production build but the Nitro DEV server mis-resolves it (outside server/),
+    // so expose a stable alias that works in both dev and build.
+    alias: {
+      '#domain': fileURLToPath(new URL('./app/domain', import.meta.url)),
+    },
+  },
   // Feature components auto-import by their base name (no path prefix). The
   // shadcn `ui` dir is registered separately by shadcn-nuxt with the `Ui` prefix.
   components: [
