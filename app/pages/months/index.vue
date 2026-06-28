@@ -3,16 +3,18 @@
 // year. Create a new month from a native month picker, then jump into it.
 import { ref, computed } from 'vue'
 import { toast } from 'vue-sonner'
-import { CalendarIcon, PlusIcon } from '@lucide/vue'
+import { CalendarIcon, PlusIcon, Trash2Icon } from '@lucide/vue'
 import {
   yearOf,
   formatMonthLabel,
   currentMonthId,
   isMonthId,
 } from '@/lib/dates.js'
+import { monthsRepo } from '@/repositories/months.js'
 
 const { months, loading, isEmpty } = useHomeAnalysis()
 const { currency: defaultCurrency } = useSettings()
+const auth = useAuthStore()
 
 // Group newest-first months into { year, items } buckets, years descending.
 const byYear = computed(() => {
@@ -44,6 +46,24 @@ async function confirmNewMonth() {
   }
   dialogOpen.value = false
   await navigateTo(`/months/${value}`)
+}
+
+// Delete a month (with confirmation). The list re-renders via its live subscription.
+const del = ref({ open: false, month: null, busy: false })
+function askDelete(m) { del.value = { open: true, month: m, busy: false } }
+async function confirmDelete() {
+  const m = del.value.month
+  if (!m) return
+  del.value.busy = true
+  try {
+    await monthsRepo.remove(auth.user.uid, m.month)
+    del.value.open = false
+    toast.success(`${formatMonthLabel(m.month)} deleted`)
+  }
+  catch {
+    toast.error('Could not delete month')
+    del.value.busy = false
+  }
 }
 </script>
 
@@ -84,30 +104,39 @@ async function confirmNewMonth() {
       <section v-for="group in byYear" :key="group.year" class="space-y-3">
         <h2 class="text-lg font-semibold tracking-tight">{{ group.year }}</h2>
         <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <UiButton
-            v-for="m in group.items"
-            :key="m.month"
-            as-child
-            variant="outline"
-            class="h-auto w-full flex-col items-start gap-2 p-4 text-left"
-          >
-            <NuxtLink :to="`/months/${m.month}`">
-              <div class="flex w-full items-start justify-between gap-2">
-                <span class="font-medium">{{ formatMonthLabel(m.month) }}</span>
-                <UiBadge :variant="m.seededFrom ? 'secondary' : 'outline'">
-                  {{ m.seededFrom ? 'Planned' : 'Blank' }}
-                </UiBadge>
-              </div>
-              <span class="text-xs font-normal text-muted-foreground">
-                Income:
-                <MoneyValue
-                  :amount="m.income"
-                  :currency="m.currency || defaultCurrency"
-                  class="text-foreground"
-                />
-              </span>
-            </NuxtLink>
-          </UiButton>
+          <div v-for="m in group.items" :key="m.month" class="group relative">
+            <UiButton
+              as-child
+              variant="outline"
+              class="h-auto w-full flex-col items-start gap-2 p-4 text-left"
+            >
+              <NuxtLink :to="`/months/${m.month}`">
+                <div class="flex w-full items-start justify-between gap-2">
+                  <span class="font-medium">{{ formatMonthLabel(m.month) }}</span>
+                  <UiBadge :variant="m.seededFrom ? 'secondary' : 'outline'">
+                    {{ m.seededFrom ? 'Planned' : 'Blank' }}
+                  </UiBadge>
+                </div>
+                <span class="text-xs font-normal text-muted-foreground">
+                  Income:
+                  <MoneyValue
+                    :amount="m.income"
+                    :currency="m.currency || defaultCurrency"
+                    class="text-foreground"
+                  />
+                </span>
+              </NuxtLink>
+            </UiButton>
+            <UiButton
+              variant="ghost"
+              size="icon"
+              class="absolute bottom-1.5 right-1.5 z-10 size-7 text-muted-foreground/50 transition hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+              :aria-label="`Delete ${formatMonthLabel(m.month)}`"
+              @click="askDelete(m)"
+            >
+              <Trash2Icon class="size-4" />
+            </UiButton>
+          </div>
         </div>
       </section>
     </div>
@@ -133,5 +162,21 @@ async function confirmNewMonth() {
         </UiDialogFooter>
       </UiDialogContent>
     </UiDialog>
+
+    <!-- Delete confirm -->
+    <UiAlertDialog v-model:open="del.open">
+      <UiAlertDialogContent>
+        <UiAlertDialogHeader>
+          <UiAlertDialogTitle>Delete {{ del.month ? formatMonthLabel(del.month.month) : 'this month' }}?</UiAlertDialogTitle>
+          <UiAlertDialogDescription>
+            This permanently removes the month and everything in it — income, expenses, surplus routing, money flow, checklist and any daily expenses logged here. Your plans, accounts and investments aren’t affected. This can’t be undone.
+          </UiAlertDialogDescription>
+        </UiAlertDialogHeader>
+        <UiAlertDialogFooter>
+          <UiAlertDialogCancel :disabled="del.busy">Cancel</UiAlertDialogCancel>
+          <UiAlertDialogAction :disabled="del.busy" class="bg-destructive text-white hover:bg-destructive/90" @click="confirmDelete">{{ del.busy ? 'Deleting…' : 'Delete' }}</UiAlertDialogAction>
+        </UiAlertDialogFooter>
+      </UiAlertDialogContent>
+    </UiAlertDialog>
   </div>
 </template>

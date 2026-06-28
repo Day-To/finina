@@ -118,6 +118,11 @@ export function useMonth(monthIdRef) {
     await monthsRepo.upsert(uid(), monthId.value, { ...data, month: monthId.value })
   }
 
+  /** Permanently delete this month (and its daily expenses). */
+  async function remove() {
+    await monthsRepo.remove(uid(), monthId.value)
+  }
+
   /**
    * Preview a re-sync: build a fresh seed from the active plans and summarize
    * what would change. Does not write anything.
@@ -195,6 +200,7 @@ export function useMonth(monthIdRef) {
     materializeFromPlans,
     createBlank,
     save,
+    remove,
     previewResync,
     applyResync,
   }

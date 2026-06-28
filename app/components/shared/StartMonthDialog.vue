@@ -3,8 +3,9 @@
 // hero, then one immersive accent-themed scene per stage (transfers → fixed →
 // variable → mutual funds → stocks → checklist). Every item you complete fires a
 // spark burst + fills a progress ring; finishing a scene plays a milestone
-// celebration that auto-glides to the next; the end is a confetti finale. Amounts
-// are READ-ONLY; the only thing written back is the checklist done-state.
+// celebration that auto-glides to the next; the end is a confetti finale. Fixed &
+// variable amounts are EDITABLE inline; the checklist done-state + any amount edits
+// are written back on finish.
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import {
   SparklesIcon, ArrowRightLeftIcon, ReceiptIcon, TrendingUpIcon, ListChecksIcon,
@@ -26,6 +27,7 @@ const working = ref(null) // snapshot of the month taken on open
 const current = ref(0)
 const dir = ref(1) // scene transition direction
 const doneSet = ref(new Set())
+const pendingAmounts = ref({}) // { lineId: minorUnits } — fixed/variable edits, held until the step changes
 const started = ref(false) // intro dismissed
 const milestone = ref(false) // step-complete celebration showing
 const celebrating = ref(false) // finale showing
@@ -55,6 +57,11 @@ const transferItems = computed(() => {
 function groupExpenses(kind) {
   const m = working.value
   if (!m) return []
+  const pend = pendingAmounts.value
+  // effAmount = the in-progress edit if any, else the committed amount. VISIBILITY,
+  // though, is keyed off the COMMITTED amount only — so clearing a field (or typing 0)
+  // never makes the row vanish while you're editing.
+  const eff = (l) => (l.id in pend ? pend[l.id] : (l.amount || 0))
   const incomeId = m.flow?.incomeAccountId
   const acctOf = new Map()
   for (const a of m.flow?.allocations ?? []) for (const sid of a.sourceIds ?? []) acctOf.set(sid, a.accountId)
@@ -63,18 +70,34 @@ function groupExpenses(kind) {
     if (!l.amount) continue
     const acc = acctOf.get(l.id) ?? incomeId ?? '∅'
     if (!groups.has(acc)) groups.set(acc, [])
-    groups.get(acc).push(l)
+    groups.get(acc).push({ ...l, effAmount: eff(l) })
   }
   return [...groups.entries()].map(([accId, items]) => ({
     accountId: accId,
     name: accId === '∅' ? 'Unassigned' : nameOf(accId),
     isIncome: accId === incomeId,
     items,
-    total: items.reduce((s, l) => s + (l.amount || 0), 0),
+    total: items.reduce((s, l) => s + (l.effAmount || 0), 0),
   }))
 }
 const fixedGroups = computed(() => groupExpenses('fixedExpenses'))
 const variableGroups = computed(() => groupExpenses('variableExpenses'))
+
+// Inline amount edits on the fixed/variable scenes are HELD in a pending buffer and
+// only written into the working snapshot when the user moves to another step (so the
+// row never vanishes mid-edit and downstream figures don't churn on every keystroke).
+function setLineAmount(id, val) {
+  pendingAmounts.value = { ...pendingAmounts.value, [id]: Math.max(0, Math.round(Number(val) || 0)) }
+}
+function flushPending() {
+  const p = pendingAmounts.value
+  if (!Object.keys(p).length) return
+  const m = working.value
+  for (const kind of ['fixedExpenses', 'variableExpenses']) {
+    for (const l of m?.[kind] ?? []) if (l.id in p) l.amount = p[l.id]
+  }
+  pendingAmounts.value = {}
+}
 
 const breakdown = computed(() => (working.value ? investmentBreakdown(working.value, props.registry) : null))
 // Move-list = pool spread leaves + DIRECT routings (you physically move parked
@@ -205,6 +228,7 @@ function reset() {
   milestone.value = false
   celebrating.value = false
   confetti.value = []
+  pendingAmounts.value = {}
   const d = new Set()
   for (const t of transferItems.value) if (checklistDoneFor(t.accountId)) d.add('tf:' + t.accountId)
   if (checklistDoneFor('inv:mf')) for (const f of mfItems.value) d.add('mf:' + f.dkey)
@@ -227,6 +251,7 @@ function scheduleAdvanceIfComplete() {
 function next() {
   clearTimeout(advanceTimer)
   milestone.value = false
+  flushPending() // commit this step's amount edits before leaving it
   if (isLast.value) return finish()
   dir.value = 1
   current.value++
@@ -234,12 +259,19 @@ function next() {
 function back() {
   clearTimeout(advanceTimer)
   milestone.value = false
+  flushPending()
   if (current.value > 0) { dir.value = -1; current.value-- }
 }
 
 function finish() {
+  flushPending()
   const list = (working.value?.checklist ?? []).map((c) => ({ ...c, isDone: checkItemDone(c) }))
-  emit('complete', list)
+  // Emit the checklist + any inline amount edits made during the ritual.
+  emit('complete', {
+    checklist: list,
+    fixedExpenses: working.value?.fixedExpenses ?? [],
+    variableExpenses: working.value?.variableExpenses ?? [],
+  })
   celebrating.value = true
   nextTick(makeConfetti)
 }
@@ -385,10 +417,12 @@ onBeforeUnmount(() => { clearTimeout(advanceTimer); cancelAnimationFrame(rafId);
                       <MoneyValue :amount="g.total" :currency="currency" variant="muted" class="text-sm" />
                     </div>
                     <ul class="divide-y">
-                      <li v-for="l in g.items" :key="l.id">
-                        <button type="button" class="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors" :style="isDone((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id) ? { background: tint(stepAccent, 8) } : {}" @click="toggle((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id)">
-                          <span class="min-w-0 flex-1 truncate text-sm font-medium" :class="isDone((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id) && 'text-muted-foreground line-through'">{{ l.item || 'Expense' }}</span>
-                          <MoneyValue :amount="l.amount" :currency="currency" variant="total" class="shrink-0 font-semibold" />
+                      <li v-for="l in g.items" :key="l.id" class="flex items-center gap-2.5 px-4 py-2.5 transition-colors" :style="isDone((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id) ? { background: tint(stepAccent, 8) } : {}">
+                        <button type="button" class="min-w-0 flex-1 truncate text-left text-sm font-medium" :class="isDone((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id) && 'text-muted-foreground line-through'" @click="toggle((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id)">{{ l.item || 'Expense' }}</button>
+                        <div class="w-32 shrink-0">
+                          <MoneyInput :model-value="l.effAmount" :currency="currency" :aria-label="`Amount for ${l.item || 'expense'}`" @update:model-value="setLineAmount(l.id, $event)" />
+                        </div>
+                        <button type="button" class="shrink-0" :aria-label="`Mark ${l.item || 'expense'} ${isDone((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id) ? 'not paid' : 'paid'}`" @click="toggle((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id)">
                           <StepCheck :done="isDone((step.key === 'fixed' ? 'fx:' : 'vr:') + l.id)" :accent="stepAccent" small />
                         </button>
                       </li>

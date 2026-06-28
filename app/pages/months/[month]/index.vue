@@ -5,7 +5,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { CalendarPlusIcon, FilePlusIcon, RefreshCwIcon, SaveIcon, ReceiptIcon, SparklesIcon, LayoutDashboardIcon, CalendarDaysIcon, WalletIcon, SlidersHorizontalIcon, TrendingUpIcon } from '@lucide/vue'
+import { CalendarPlusIcon, FilePlusIcon, RefreshCwIcon, SaveIcon, ReceiptIcon, SparklesIcon, LayoutDashboardIcon, CalendarDaysIcon, WalletIcon, SlidersHorizontalIcon, TrendingUpIcon, Trash2Icon } from '@lucide/vue'
 import { surplus, surplusAmounts, dailyBudget, accountTransfers, autoTransferTodos, investmentPools, investmentBreakdown, investedTotal, directRoutings, autoInvestmentTodos, totalExpenses, totalFixed, totalVariable } from '@/domain/calc/index.js'
 import { newId } from '@/domain/ids.js'
 import { formatMonthLabel } from '@/lib/dates.js'
@@ -14,7 +14,7 @@ definePageMeta({ key: (route) => route.fullPath })
 
 const route = useRoute()
 const monthIdParam = computed(() => route.params.month)
-const { month, loading, exists, materializeFromPlans, createBlank, save, previewResync, applyResync } = useMonth(monthIdParam)
+const { month, loading, exists, materializeFromPlans, createBlank, save, remove, previewResync, applyResync } = useMonth(monthIdParam)
 const { accounts, byId: accountsById } = useBankAccounts()
 const { investments, mutualFunds, stocks, bucketNamesFor, archivedFundIds, pausedFundIds, loading: invLoading } = useInvestments()
 const investmentPlanStore = useInvestmentPlan()
@@ -53,6 +53,7 @@ function comparable(m) {
 
 const draft = ref(null)
 const adoptNext = ref(false) // force-adopt the next snapshot (right after a save)
+const deleting = ref(false) // set just before we navigate away after a delete (skips the unsaved guard)
 // `baseline` is the comparable() of the draft AFTER on-load auto-corrections
 // settle (stripRoutedSources / syncAutoTodos). Dirty compares against it — never
 // against the raw server doc — so those derived corrections never read as a user
@@ -248,14 +249,24 @@ function goMonth(id) { navigateTo(`/months/${id}`) }
 
 // ── Start month (guided ritual) ───────────────────────────────────────────────
 const startMonthOpen = ref(false)
-async function onStartMonthComplete(checklist) {
+// The ritual emits { checklist, fixedExpenses, variableExpenses } — fixed/variable
+// carry any inline amount edits made during the ritual. (Back-compat: a bare
+// checklist array is still accepted.)
+async function onStartMonthComplete(payload) {
   if (!draft.value) return
-  draft.value = { ...draft.value, checklist }
+  const checklist = Array.isArray(payload) ? payload : payload?.checklist
+  const next = { ...draft.value, checklist }
+  if (payload && !Array.isArray(payload)) {
+    if (payload.fixedExpenses) next.fixedExpenses = payload.fixedExpenses
+    if (payload.variableExpenses) next.variableExpenses = payload.variableExpenses
+  }
+  draft.value = next
   await saveChanges()
 }
 
 // ── Unsaved-changes guard ─────────────────────────────────────────────────────
 onBeforeRouteLeave(() => {
+  if (deleting.value) return true
   if (!dirty.value) return true
   return window.confirm('You have unsaved changes to this month. Leave without saving?')
 })
@@ -287,6 +298,25 @@ async function confirmResync() {
   catch { toast.error('Could not re-sync') }
   finally { resync.value.busy = false }
 }
+
+// ── Delete month ──────────────────────────────────────────────────────────────
+const del = ref({ open: false, busy: false })
+function openDelete() { del.value = { open: true, busy: false } }
+async function confirmDelete() {
+  del.value.busy = true
+  try {
+    await remove()
+    deleting.value = true // let the unsaved-changes guard pass without prompting
+    draft.value = null
+    del.value.open = false
+    toast.success('Month deleted')
+    await navigateTo('/months')
+  }
+  catch {
+    toast.error('Could not delete month')
+    del.value.busy = false
+  }
+}
 </script>
 
 <template>
@@ -306,6 +336,7 @@ async function confirmResync() {
           <NuxtLink :to="`/months/${monthIdParam}/daily`">Daily</NuxtLink>
         </UiButton>
         <UiButton variant="outline" class="flex-1 sm:flex-none" :disabled="busy || invLoading" @click="openResync"><RefreshCwIcon class="size-4" /> Re-sync</UiButton>
+        <UiButton v-if="exists" variant="outline" size="icon" class="shrink-0 text-muted-foreground hover:border-destructive/40 hover:text-destructive" :disabled="busy" aria-label="Delete month" @click="openDelete"><Trash2Icon class="size-4" /></UiButton>
       </div>
     </div>
 
@@ -587,6 +618,22 @@ async function confirmResync() {
         <UiAlertDialogFooter>
           <UiAlertDialogCancel :disabled="resync.busy">Cancel</UiAlertDialogCancel>
           <UiAlertDialogAction :disabled="resync.busy" @click="confirmResync">{{ resync.busy ? 'Re-syncing…' : 'Re-sync' }}</UiAlertDialogAction>
+        </UiAlertDialogFooter>
+      </UiAlertDialogContent>
+    </UiAlertDialog>
+
+    <!-- Delete confirm -->
+    <UiAlertDialog v-model:open="del.open">
+      <UiAlertDialogContent>
+        <UiAlertDialogHeader>
+          <UiAlertDialogTitle>Delete {{ formatMonthLabel(monthIdParam, locale) }}?</UiAlertDialogTitle>
+          <UiAlertDialogDescription>
+            This permanently removes this month and everything in it — income, expenses, surplus routing, money flow, checklist and any daily expenses logged here. Your plans, accounts and investments aren’t affected. This can’t be undone.
+          </UiAlertDialogDescription>
+        </UiAlertDialogHeader>
+        <UiAlertDialogFooter>
+          <UiAlertDialogCancel :disabled="del.busy">Cancel</UiAlertDialogCancel>
+          <UiAlertDialogAction :disabled="del.busy" class="bg-destructive text-white hover:bg-destructive/90" @click="confirmDelete">{{ del.busy ? 'Deleting…' : 'Delete month' }}</UiAlertDialogAction>
         </UiAlertDialogFooter>
       </UiAlertDialogContent>
     </UiAlertDialog>

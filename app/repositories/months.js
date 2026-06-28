@@ -1,6 +1,6 @@
 // Months repository (§6). monthId = "YYYY-MM" (natural key).
-import { getDoc, getDocs, setDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore'
-import { userCollection, userDoc, makeConverter } from './base.js'
+import { getDoc, getDocs, setDoc, onSnapshot, query, orderBy, serverTimestamp, writeBatch } from 'firebase/firestore'
+import { db, userCollection, userDoc, makeConverter } from './base.js'
 import { monthSchema } from '~/domain/schemas.js'
 
 const conv = makeConverter(monthSchema, (id, raw) => ({ ...raw, month: raw.month ?? id }))
@@ -42,8 +42,18 @@ export const monthsRepo = {
     await setDoc(ref(uid, monthId), payload, { merge: true })
   },
 
+  /**
+   * Delete a month AND its dailyExpenses subcollection. Firestore doesn't cascade
+   * deletes to subcollections, so we clear them in the same atomic batch — otherwise
+   * orphaned daily expenses linger (and resurface if the month id is recreated).
+   * A month holds at most ~31×N daily rows, well under the 500-op batch limit.
+   */
   async remove(uid, monthId) {
-    await deleteDoc(userDoc(uid, 'months', monthId))
+    const batch = writeBatch(db())
+    const daily = await getDocs(userCollection(uid, 'months', monthId, 'dailyExpenses'))
+    daily.forEach((d) => batch.delete(d.ref))
+    batch.delete(userDoc(uid, 'months', monthId))
+    await batch.commit()
   },
 
   /**
