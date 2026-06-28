@@ -23,7 +23,7 @@ defineProps({
       </div>
       <span
         v-if="hint && !loading"
-        :class="cn('text-xs', hintVariant === 'positive' ? 'text-positive' : hintVariant === 'negative' ? 'text-negative' : 'text-muted-foreground')"
+        :class="cn('text-xs', hintVariant === 'positive' ? 'text-positive' : hintVariant === 'negative' ? 'text-negative' : hintVariant === 'invest' ? 'text-invest' : 'text-muted-foreground')"
       >
         {{ hint }}
       </span>

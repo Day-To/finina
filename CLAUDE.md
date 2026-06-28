@@ -69,6 +69,21 @@ Each `useX` opens Firestore subscriptions (`onSnapshot`), exposes reactive refs/
 - **Auth** is Firebase email/password. `plugins/firebase.client.js` initializes Firebase, feeds the Pinia `auth` store from `onAuthStateChanged`, and provides `$db`, `$firebaseAuth`, and `$authReady()`. `middleware/auth.global.js` gates routes by page meta: `public: true` (anyone), `unauthenticatedOnly: true` (signed-out only), or default (auth required) — it awaits `$authReady()` before redirecting.
 - The Firebase **web config in `firebase.client.js` is intentionally public** (standard for client SDKs); real protection is the Firestore owner-only rules. The Admin SDK credentials (server) are the secrets — see `.env.example`.
 
+## Color hierarchy (semantic finance colors)
+
+Money is colored by **what kind of money movement it is**, consistently across every page, chart, flow, node and badge. Four families, defined as OKLCH tokens in `app/assets/css/tailwind.css`:
+
+| Meaning | Family | Base token | Tailwind utility | Notes |
+|---|---|---|---|---|
+| **Spend** — any expense / outflow / money spent (fixed, variable, daily, over-budget) | **red** | `--negative` (alias `--spend`) | `text-negative` / `bg-negative` / `border-negative` (or `*-spend`) | |
+| **Transfer** — money moving location→location with **no asset built** (income landing, account transfers, the money-flow "transfer" edges) | **blue** | `--auto` (alias `--transfer`) | `text-auto` / `*-transfer`; `<MoneyValue variant="auto">` colors by sign | |
+| **Saving** — surplus kept, savings goals, sinking funds, "kept", under-budget, gains | **green** | `--positive` (alias `--saving`) | `text-positive` / `*-saving`; `<MoneyValue variant="positive">` | |
+| **Investment** — anything put to work to build an asset: MF, stocks, pools, buckets, funds | **emerald** | `--invest` | `text-invest` / `bg-invest` / `border-invest`; `<MoneyValue variant="invest">` | emerald (hue ~165) is deliberately distinct from saving's green (hue ~150) |
+
+Each family also has a **5-step shade ramp** (`--spend-1..5`, `--transfer-1..5`, `--saving-1..5`, `--invest-1..5`; 1 = lightest → 5 = darkest, mode-independent like `--chart-*`) for charts/flows that show **multiple items within one family** — e.g. several expense categories use red shades, several funds use emerald shades. Utilities: `bg-spend-2`, `var(--invest-3)`, etc.
+
+Rules: **never** use a family's color for a different meaning (e.g. don't color investments green — that's saving). Status/UI signals that aren't a money category (success pills, "needs attention", brand/`--primary`, neutral `--muted-foreground`) stay as-is. Don't hardcode hex for these meanings — use the tokens. `--primary` remains the brand emerald for chrome (buttons, nav, FAB); investment **data** uses `--invest`.
+
 ## Server (Nitro) — optional
 
 `server/api/expenses.{get,post}.js` writes/reads one user's daily expenses via the **Firebase Admin SDK**, configured entirely by env vars (`EXPENSE_API_UID`, optional `EXPENSE_API_TOKEN`, etc. — see `.env.example`). This is a drop-in for an old Apps Script webhook and **only works when deploying the Node server**, not with a static export. Amounts in this API are in **major** units; everything else in the app is minor units.

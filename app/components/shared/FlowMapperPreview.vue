@@ -43,7 +43,7 @@ const sourceDots = computed(() => Math.min(5, props.sources.length))
 
     <!-- mini income → sources → accounts glyph -->
     <div class="my-3 flex items-center gap-2">
-      <span class="size-3 shrink-0 rounded-full bg-primary" />
+      <span class="size-3 shrink-0 rounded-full bg-[var(--auto)]" />
       <span class="h-px min-w-4 flex-1 bg-border" />
       <span class="flex shrink-0 gap-1">
         <span v-for="i in sourceDots" :key="i" class="size-2 rounded-full bg-muted-foreground/40" />
@@ -51,7 +51,7 @@ const sourceDots = computed(() => Math.min(5, props.sources.length))
       </span>
       <span class="h-px min-w-4 flex-1 bg-border" />
       <span class="flex shrink-0 gap-1">
-        <span v-for="a in chips" :key="a.id" class="size-3 rounded-full bg-primary/60" />
+        <span v-for="a in chips" :key="a.id" class="size-3 rounded-full bg-[var(--transfer-2)]" />
       </span>
     </div>
 

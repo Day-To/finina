@@ -9,13 +9,14 @@
 import { surplusAmounts, sourceAmountMap, investmentPools, investmentBreakdown } from '../domain/calc/index.js'
 import { flattenAssignment, deriveFlow, reconcileSummary } from './useFlowGraph.js'
 
-// Distinct categorical hues so every layer reads apart: income (blue) ≠ savings
-// (amber), accounts (purple) ≠ investments (green/teal), stocks (teal) ≠ mutual
-// funds (green). Expenses keep the semantic red.
+// Semantic finance families (see CLAUDE.md "Color hierarchy"): transfer = blue
+// (income + accounts), spend = red (expenses), saving = green, investment =
+// emerald (mutual funds + stocks as two emerald shades). 'warn' is an
+// out-of-family attention state (unassigned / unrouted).
 const C = {
-  income: 'var(--auto)', account: '#a855f7', transfer: '#a855f7',
-  expense: 'var(--negative)', save: '#f59e0b',
-  mf: 'var(--positive)', stocks: '#14b8a6',
+  income: 'var(--auto)', account: 'var(--transfer-2)', transfer: 'var(--transfer-2)',
+  expense: 'var(--negative)', save: 'var(--positive)',
+  mf: 'var(--invest)', stocks: 'var(--invest-2)',
   idle: 'var(--muted-foreground)', warn: '#f43f5e',
 }
 // Left→right columns.

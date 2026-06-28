@@ -44,8 +44,8 @@ const incomeSplit = computed(() => {
   const kept = Math.max(0, incomeAmount.value - expensesAmount.value - investedAmount.value)
   return [
     { label: 'Expenses', value: expensesAmount.value, color: 'var(--negative)' },
-    { label: 'Invested', value: investedAmount.value, color: 'var(--positive)' },
-    { label: 'Kept', value: kept, color: 'var(--auto)' },
+    { label: 'Invested', value: investedAmount.value, color: 'var(--invest)' },
+    { label: 'Kept', value: kept, color: 'var(--positive)' },
   ]
 })
 

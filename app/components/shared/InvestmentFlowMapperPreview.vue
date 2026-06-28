@@ -42,15 +42,15 @@ const chipLabel = (r) => (r.kind === 'fund' ? (d.value.holdings.find((h) => h.al
     </div>
 
     <div class="my-3 flex items-center gap-2">
-      <span class="size-3 shrink-0 rounded-full bg-[var(--auto)]" />
+      <span class="size-3 shrink-0 rounded-full bg-[var(--invest)]" />
       <span class="h-px min-w-4 flex-1 bg-border" />
       <span class="flex shrink-0 gap-1">
-        <span v-for="r in bucketRows.slice(0, 4)" :key="r.id" class="size-2.5 rounded-full bg-[var(--auto)]/50" />
+        <span v-for="r in bucketRows.slice(0, 4)" :key="r.id" class="size-2.5 rounded-full bg-[var(--invest)]/50" />
         <span v-if="!bucketRows.length && !fundRows.length" class="text-[10px] text-muted-foreground">not routed</span>
       </span>
       <span class="h-px min-w-4 flex-1 bg-border" />
       <span class="flex shrink-0 gap-1">
-        <span v-for="h in d.holdings.slice(0, 5)" :key="`${h.allocId}-${h.id}`" class="size-2 rounded-full bg-positive/60" />
+        <span v-for="h in d.holdings.slice(0, 5)" :key="`${h.allocId}-${h.id}`" class="size-2 rounded-full bg-invest/60" />
       </span>
     </div>
 

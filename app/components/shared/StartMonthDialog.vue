@@ -234,7 +234,7 @@ function finish() {
   nextTick(makeConfetti)
 }
 
-const COLORS = ['var(--positive)', 'var(--auto)', 'var(--negative)', '#f59e0b', 'var(--primary)']
+const COLORS = ['var(--invest)', 'var(--positive)', 'var(--auto)', 'var(--negative)', 'var(--primary)']
 function makeConfetti() {
   confetti.value = Array.from({ length: 110 }, (_, i) => ({
     id: i,

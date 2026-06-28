@@ -2,7 +2,7 @@
 // One investment type (Mutual Funds OR Stocks) as a self-contained, colour-coded
 // card — the de-crammed, segregated replacement for the old shared Investments
 // block. Presentational + editing-host: the page still owns draft state; this
-// card emits changes. Accent (var(--positive) for MF, var(--chart-4) for stocks)
+// card emits changes. Accent (emerald: var(--invest) for MF, var(--invest-2) for stocks)
 // tints the left border, icon chip and routed meter so the two are instantly
 // distinguishable in light and dark. Preserves every data point.
 import { computed } from 'vue'

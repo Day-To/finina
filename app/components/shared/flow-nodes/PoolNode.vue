@@ -1,5 +1,5 @@
 <script setup>
-// Pool node (root, BLUE). The surplus pool for one investment type. From its "+"
+// Pool node (root, EMERALD). The surplus pool for one investment type. From its "+"
 // route money to a bucket or a single fund. Source handle on the right.
 import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
@@ -10,12 +10,12 @@ const label = computed(() => (props.data.poolKey === 'stocks' ? 'Stocks pool' : 
 </script>
 
 <template>
-  <div class="group relative w-64 rounded-2xl border-2 border-[var(--auto)]/55 bg-card p-3.5 shadow-lg shadow-black/20 ring-1 ring-[var(--auto)]/10">
+  <div class="group relative w-64 rounded-2xl border-2 border-[var(--invest)]/55 bg-card p-3.5 shadow-lg shadow-black/20 ring-1 ring-[var(--invest)]/10">
     <div class="flex items-center gap-2">
-      <span class="grid size-8 place-items-center rounded-xl bg-[var(--auto)]/15 text-[var(--auto)]">
+      <span class="grid size-8 place-items-center rounded-xl bg-[var(--invest)]/15 text-[var(--invest)]">
         <TrendingUpIcon class="size-4" />
       </span>
-      <p class="text-xs font-semibold uppercase tracking-widest text-[var(--auto)]">{{ label }}</p>
+      <p class="text-xs font-semibold uppercase tracking-widest text-[var(--invest)]">{{ label }}</p>
     </div>
 
     <MoneyValue :amount="data.pool" :currency="data.currency" variant="total" class="mt-2 block text-2xl font-bold" />

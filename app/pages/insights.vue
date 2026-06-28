@@ -27,8 +27,12 @@ const compact = (minor) => {
   catch { return String(Math.round(fromMinor(minor || 0, cur.value))) }
 }
 
-const PALETTE = ['var(--chart-1)', 'var(--chart-4)', 'var(--chart-2)', 'var(--chart-5)', 'var(--chart-3)', 'var(--auto)', 'var(--positive)', 'var(--primary)']
-const C = { income: 'var(--auto)', expenses: 'var(--negative)', surplus: 'var(--positive)', invest: 'var(--positive)', stocks: 'var(--chart-4)', budget: 'var(--muted-foreground)' }
+// Per-family shade ramps (see CLAUDE.md "Color hierarchy"): spend = red, invest = emerald.
+const SPEND = ['var(--spend-2)', 'var(--spend-3)', 'var(--spend-1)', 'var(--spend-4)', 'var(--spend-5)']
+const INVEST = ['var(--invest-2)', 'var(--invest-3)', 'var(--invest-1)', 'var(--invest-4)', 'var(--invest-5)']
+// Surplus allocation mixes saving (green) and investment (emerald).
+const ALLOC = ['var(--saving-2)', 'var(--invest-2)', 'var(--saving-3)', 'var(--invest-3)', 'var(--saving-4)', 'var(--invest-4)', 'var(--saving-1)', 'var(--invest-1)']
+const C = { income: 'var(--auto)', expenses: 'var(--negative)', surplus: 'var(--positive)', invest: 'var(--invest)', stocks: 'var(--invest-2)', budget: 'var(--muted-foreground)' }
 
 // ── Aggregates ────────────────────────────────────────────────────────────────
 const series = computed(() => monthlySeries(months.value))
@@ -51,14 +55,14 @@ const savingsData = computed(() => series.value.map((s) => ({ label: short(s.mon
 const savingsSeries = [{ name: 'Savings rate', color: C.surplus, area: true }]
 
 const fixedVarData = computed(() => series.value.map((s) => ({ label: short(s.month), values: [s.fixed, s.variable] })))
-const fixedVarSeries = [{ name: 'Fixed', color: PALETTE[0] }, { name: 'Variable', color: PALETTE[1] }]
-const fixedVarSlices = computed(() => [{ label: 'Fixed', value: fixedVar.value.fixed, color: PALETTE[0] }, { label: 'Variable', value: fixedVar.value.variable, color: PALETTE[1] }])
+const fixedVarSeries = [{ name: 'Fixed', color: SPEND[1] }, { name: 'Variable', color: SPEND[0] }]
+const fixedVarSlices = computed(() => [{ label: 'Fixed', value: fixedVar.value.fixed, color: SPEND[1] }, { label: 'Variable', value: fixedVar.value.variable, color: SPEND[0] }])
 
-const categoryRows = computed(() => expenseCats.value.map((r, i) => ({ label: r.item, value: r.total, color: PALETTE[i % PALETTE.length], sub: r.fixed && r.variable ? 'mixed' : r.variable ? 'variable' : 'fixed' })))
+const categoryRows = computed(() => expenseCats.value.map((r, i) => ({ label: r.item, value: r.total, color: SPEND[i % SPEND.length], sub: r.fixed && r.variable ? 'mixed' : r.variable ? 'variable' : 'fixed' })))
 
 const dailyData = computed(() => sortedMonths.value.map((m) => ({ label: short(m.month), values: [daily.value.byMonth[m.month] || 0, dailyBudget(m)] })))
 const dailySeries = [{ name: 'Spent', color: C.expenses }, { name: 'Budget', color: C.budget }]
-const dailyRows = computed(() => daily.value.items.slice(0, 8).map((r, i) => ({ label: r.item, value: r.total, sub: `${r.count}×`, color: PALETTE[i % PALETTE.length] })))
+const dailyRows = computed(() => daily.value.items.slice(0, 8).map((r, i) => ({ label: r.item, value: r.total, sub: `${r.count}×`, color: SPEND[i % SPEND.length] })))
 const hasDaily = computed(() => daily.value.count > 0)
 
 const cumulativeData = computed(() => invSeries.value.map((s) => ({ label: short(s.month), values: [s.cumulative] })))
@@ -69,11 +73,11 @@ const investedPerMonthSeries = [{ name: 'Mutual funds', color: C.invest }, { nam
 const investRateData = computed(() => series.value.map((s) => ({ label: short(s.month), values: [s.investRate] })))
 const investRateSeries = [{ name: 'Investing rate', color: C.invest, area: true }]
 const typeSlices = computed(() => [{ label: 'Mutual funds', value: invType.value.mf, color: C.invest }, { label: 'Stocks', value: invType.value.stocks, color: C.stocks }])
-const bucketSlices = computed(() => invBucket.value.map((b, i) => ({ label: b.bucket, value: b.amount, color: PALETTE[i % PALETTE.length] })))
+const bucketSlices = computed(() => invBucket.value.map((b, i) => ({ label: b.bucket, value: b.amount, color: INVEST[i % INVEST.length] })))
 const hasInvest = computed(() => invType.value.total > 0)
 
 const allocData = computed(() => surplusAlloc.value.series.map((row) => ({ label: short(row.month), values: surplusAlloc.value.items.map((it) => row.values[it] || 0) })))
-const allocSeries = computed(() => surplusAlloc.value.items.map((it, i) => ({ name: it, color: PALETTE[i % PALETTE.length] })))
+const allocSeries = computed(() => surplusAlloc.value.items.map((it, i) => ({ name: it, color: ALLOC[i % ALLOC.length] })))
 
 // ── KPI cards ─────────────────────────────────────────────────────────────────
 const incomeSpark = computed(() => series.value.map((s) => s.income))

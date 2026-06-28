@@ -85,7 +85,7 @@ describe('buildTree', () => {
     const { nodes } = buildTree({ sources, accounts, flow: { incomeAccountId: null, allocations: [] }, currency: 'INR' })
     expect(nodes.filter((n) => n.type === 'income')).toHaveLength(1)
   })
-  it('renders a green bank node (transfer edge) per non-income bank with its total + count', () => {
+  it('renders a blue bank node (transfer edge) per non-income bank with its total + count', () => {
     const flow = { incomeAccountId: 'a', allocations: [{ accountId: 'b', sourceIds: ['v1', 's1'] }] }
     const { nodes, edges } = buildTree({ sources, accounts, flow, income: 100000, currency: 'INR' })
     const bank = nodes.find((n) => n.id === bankNodeId('b'))
@@ -93,7 +93,7 @@ describe('buildTree', () => {
     expect(bank.data.total).toBe(35000) // 20000 + 15000
     expect(bank.data.count).toBe(2)
     expect(edges.find((e) => e.id === 't-b')).toMatchObject({ source: 'income', target: bankNodeId('b') })
-    expect(edges.find((e) => e.id === 't-b').style.stroke).toBe('var(--positive)') // transfer = green
+    expect(edges.find((e) => e.id === 't-b').style.stroke).toBe('var(--auto)') // transfer = blue
   })
   it('hangs income-account expenses directly off the income node (no duplicate bank node)', () => {
     const flow = { incomeAccountId: 'a', allocations: [{ accountId: 'a', sourceIds: ['f1'] }] }
@@ -129,11 +129,11 @@ describe('buildTree', () => {
     const stale = buildTree({ sources, accounts, flow: { incomeAccountId: 'a', allocations: [{ accountId: 'goneAcct', sourceIds: ['deleted'] }] }, currency: 'INR' })
     expect(stale.nodes.find((n) => n.type === 'orphan')).toBeUndefined() // stale-only: no node
   })
-  it('colors a surplus item edge blue (--auto) and tags the node kind', () => {
+  it('colors a surplus item edge green (--positive) and tags the node kind', () => {
     const srcs = [{ id: 's1', item: 'Savings', amount: 15000, kind: 'surplus' }]
     const flow = { incomeAccountId: 'a', allocations: [{ accountId: 'b', sourceIds: ['s1'] }] }
     const { nodes, edges } = buildTree({ sources: srcs, accounts, flow, currency: 'INR' })
-    expect(edges.find((e) => e.id === 'e-s1').style.stroke).toBe('var(--auto)')
+    expect(edges.find((e) => e.id === 'e-s1').style.stroke).toBe('var(--positive)')
     expect(nodes.find((n) => n.id === expenseNodeId('s1')).data.kind).toBe('surplus')
   })
   it('centers a 2-child bank vertically against its children', () => {

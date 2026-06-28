@@ -132,8 +132,8 @@ const editorHoldings = (kind) => {
 
 // Per-type investment cards (only the types with a non-zero pool this month).
 const invTypes = computed(() => [
-  { key: 'mf', kind: 'mutualFund', label: 'Mutual Funds', accent: 'var(--positive)', route: 'mutual-funds', pool: pools.value.mf, breakdown: invBreakdown.value?.mf },
-  { key: 'stocks', kind: 'stock', label: 'Stocks', accent: 'var(--chart-4)', route: 'stocks', pool: pools.value.stocks, breakdown: invBreakdown.value?.stocks },
+  { key: 'mf', kind: 'mutualFund', label: 'Mutual Funds', accent: 'var(--invest)', route: 'mutual-funds', pool: pools.value.mf, breakdown: invBreakdown.value?.mf },
+  { key: 'stocks', kind: 'stock', label: 'Stocks', accent: 'var(--invest-2)', route: 'stocks', pool: pools.value.stocks, breakdown: invBreakdown.value?.stocks },
 ].filter((t) => t.pool > 0))
 
 // Checklist completion (display only — never feeds dirty/comparable).
@@ -335,10 +335,10 @@ async function confirmResync() {
           <StatTile label="Expenses" class="border-t-2 border-t-negative" :hint="`${pctOfIncome(expensesTotal)}% of income`" hint-variant="negative">
             <MoneyValue :amount="expensesTotal" :currency="currency" variant="negative" />
           </StatTile>
-          <StatTile label="Investment" class="border-t-2 border-t-positive" :hint="`${pctOfIncome(investmentTotal)}% of income`" hint-variant="positive">
-            <MoneyValue :amount="investmentTotal" :currency="currency" variant="positive" />
+          <StatTile label="Investment" class="border-t-2 border-t-invest" :hint="`${pctOfIncome(investmentTotal)}% of income`" hint-variant="invest">
+            <MoneyValue :amount="investmentTotal" :currency="currency" variant="invest" />
           </StatTile>
-          <StatTile label="Surplus" class="border-t-2 border-t-amber-500" :hint="isDeficit ? 'deficit' : 'kept this month'" :hint-variant="isDeficit ? 'negative' : 'positive'">
+          <StatTile label="Surplus" class="border-t-2 border-t-positive" :hint="isDeficit ? 'deficit' : 'kept this month'" :hint-variant="isDeficit ? 'negative' : 'positive'">
             <MoneyValue :amount="surplusPool" :currency="currency" variant="auto" />
           </StatTile>
         </div>

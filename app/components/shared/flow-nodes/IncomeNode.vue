@@ -1,6 +1,6 @@
 <script setup>
 // Income node (root, BLUE). Pick the bank where income lands; from its "+" add a
-// bank (green transfer) or an expense (red leaf). Source handle on the right.
+// bank (blue transfer) or an expense (red leaf). Source handle on the right.
 import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 import { TriangleAlertIcon, ArrowDownToLineIcon } from '@lucide/vue'

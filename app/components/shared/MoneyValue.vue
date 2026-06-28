@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 const props = defineProps({
   amount: { type: Number, default: 0 },
   currency: { type: String, default: undefined },
-  // default | positive | negative | total | muted | auto
+  // default | positive(saving) | negative(spend) | invest(emerald) | total | muted | auto(transfer, colors by sign)
   variant: { type: String, default: 'default' },
   class: { type: null, default: '' },
 })
@@ -24,6 +24,7 @@ const colorClass = computed(() => {
   return {
     positive: 'text-positive',
     negative: 'text-negative',
+    invest: 'text-invest',
     muted: 'text-muted-foreground',
     total: 'font-semibold text-foreground',
     default: 'text-foreground',

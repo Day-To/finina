@@ -50,11 +50,11 @@ function tidy() {
 
 const LEGEND = [
   { c: 'var(--auto)', label: 'Income' },
-  { c: '#a855f7', label: 'Accounts' },
+  { c: 'var(--transfer-2)', label: 'Accounts' },
   { c: 'var(--negative)', label: 'Expenses' },
-  { c: '#f59e0b', label: 'Savings' },
-  { c: 'var(--positive)', label: 'Mutual funds' },
-  { c: '#14b8a6', label: 'Stocks' },
+  { c: 'var(--positive)', label: 'Savings' },
+  { c: 'var(--invest)', label: 'Mutual funds' },
+  { c: 'var(--invest-2)', label: 'Stocks' },
 ]
 const counts = computed(() => graph.value.counts)
 const reconcile = computed(() => graph.value.reconcile)

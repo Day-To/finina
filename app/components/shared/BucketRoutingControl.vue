@@ -81,7 +81,7 @@ function distributeEvenly(id) {
       <li v-for="row in rows" :key="row.id" class="rounded-md border bg-card">
         <div class="flex flex-wrap items-center gap-2 p-2">
           <div class="flex min-w-40 flex-1 items-center gap-2">
-            <CoinsIcon v-if="row.kind === 'fund'" class="size-4 shrink-0 text-positive" />
+            <CoinsIcon v-if="row.kind === 'fund'" class="size-4 shrink-0 text-invest" />
             <span v-if="row.kind === 'fund'" class="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium">
               <span class="truncate">{{ fundName(row.fundId) }}</span>
               <UiBadge v-if="archivedFundIds.has(row.fundId)" variant="outline" class="shrink-0 text-muted-foreground">Archived</UiBadge>
@@ -135,7 +135,7 @@ function distributeEvenly(id) {
           </UiPopoverTrigger>
           <UiPopoverContent align="start" class="w-60 p-1">
             <button v-for="f in availableFunds" :key="f.id" type="button" class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted" @click="addSingleFund(f.id)">
-              <CoinsIcon class="size-4 shrink-0 text-positive" /><span class="truncate">{{ f.name }}</span>
+              <CoinsIcon class="size-4 shrink-0 text-invest" /><span class="truncate">{{ f.name }}</span>
             </button>
             <p v-if="!availableFunds.length" class="px-2 py-1.5 text-sm text-muted-foreground">All funds routed</p>
           </UiPopoverContent>

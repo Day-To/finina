@@ -48,7 +48,7 @@ function addExpense(id) { props.onAddExpense?.(id); open.value = false }
             class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
             @click="addBank(a.id)"
           >
-            <LandmarkIcon class="size-4 shrink-0 text-positive" />
+            <LandmarkIcon class="size-4 shrink-0 text-auto" />
             <span class="truncate">{{ a.name }}</span>
           </button>
           <p v-if="!availableAccounts.length" class="px-2 py-1.5 text-sm text-muted-foreground">All accounts added</p>

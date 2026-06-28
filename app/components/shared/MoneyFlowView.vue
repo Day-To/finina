@@ -26,8 +26,8 @@ const pct = (v) => (income.value ? Math.round((v / income.value) * 100) : 0)
 
 const chips = computed(() => [
   { label: 'Spending', amount: spending.value, color: 'var(--negative)' },
-  { label: 'Investing', amount: investing.value, color: 'var(--positive)' },
-  { label: 'Saved', amount: saved.value, color: '#f59e0b' },
+  { label: 'Investing', amount: investing.value, color: 'var(--invest)' },
+  { label: 'Saved', amount: saved.value, color: 'var(--positive)' },
 ].filter((c) => c.amount > 0))
 </script>
 

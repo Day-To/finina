@@ -40,9 +40,10 @@ export function reconcileInvestmentSummary(d) {
   ].filter(Boolean).join(' · ')
 }
 
-// 'route' (Pool→bucket/fund, BLUE) or 'fund' (bucket→fund, GREEN). Straight.
+// Investment routing is all EMERALD (CLAUDE.md color hierarchy): 'route'
+// (Pool→bucket/fund) uses the base emerald, 'fund' (bucket→fund) a lighter shade.
 function edgeStyle(kind) {
-  const stroke = kind === 'route' ? 'var(--auto)' : 'var(--positive)'
+  const stroke = kind === 'route' ? 'var(--invest)' : 'var(--invest-2)'
   return { animated: true, type: 'straight', style: { stroke, strokeWidth: kind === 'route' ? 2.5 : 1.75 }, markerEnd: { type: 'arrowclosed', color: stroke } }
 }
 const routeLabel = (r, currency) => (r.mode === 'AMOUNT' ? `${formatMoney(r.amount, currency)} fixed` : `${r.value}% · ${formatMoney(r.amount, currency)}`)

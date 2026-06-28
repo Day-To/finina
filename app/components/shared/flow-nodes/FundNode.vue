@@ -1,5 +1,5 @@
 <script setup>
-// Fund leaf node (GREEN). Two shapes:
+// Fund leaf node (EMERALD). Two shapes:
 //  - parentKind 'bucket': share of a bucket — edit its per-fund % here.
 //  - parentKind 'pool'  : routed directly from the pool — edit its PCT/AMOUNT.
 import { computed } from 'vue'
@@ -18,7 +18,7 @@ const editable = computed(() => !props.data.invalid && !archived.value) // archi
 <template>
   <div
     :class="cn('group relative w-52 rounded-2xl border-2 bg-card p-3 shadow-lg shadow-black/20 ring-1',
-      data.invalid ? 'border-negative/55 ring-negative/10' : 'border-positive/45 ring-positive/10',
+      data.invalid ? 'border-negative/55 ring-negative/10' : 'border-invest/45 ring-invest/10',
       paused && 'opacity-70')"
     tabindex="0"
     :aria-label="`Fund ${data.name}${archived ? ', archived' : paused ? ', paused' : ''}`"
@@ -26,7 +26,7 @@ const editable = computed(() => !props.data.invalid && !archived.value) // archi
     <Handle type="target" :position="Position.Left" />
 
     <div class="flex items-center gap-2.5">
-      <span :class="cn('grid size-8 shrink-0 place-items-center rounded-xl', data.invalid ? 'bg-negative/15 text-negative' : 'bg-positive/15 text-positive')">
+      <span :class="cn('grid size-8 shrink-0 place-items-center rounded-xl', data.invalid ? 'bg-negative/15 text-negative' : 'bg-invest/15 text-invest')">
         <TriangleAlertIcon v-if="data.invalid" class="size-4" /><CoinsIcon v-else class="size-4" />
       </span>
       <div class="min-w-0 flex-1">

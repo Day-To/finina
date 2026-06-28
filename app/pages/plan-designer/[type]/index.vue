@@ -247,7 +247,7 @@ async function save() {
                   Design how each pool routes into your funds & stocks. This is your reusable routing — new months start from it. Saving creates a new routing version (history is kept).
                 </p>
                 <div v-if="invPools.mf > 0 || mfDraft.length" class="space-y-2">
-                  <div class="flex items-center gap-2 text-sm font-medium"><TrendingUpIcon class="size-4 text-[var(--auto)]" /> Mutual Funds <span class="text-muted-foreground">pool</span> <MoneyValue :amount="invPools.mf" :currency="planCurrency" variant="total" /></div>
+                  <div class="flex items-center gap-2 text-sm font-medium"><TrendingUpIcon class="size-4 text-[var(--invest)]" /> Mutual Funds <span class="text-muted-foreground">pool</span> <MoneyValue :amount="invPools.mf" :currency="planCurrency" variant="total" /></div>
                   <InvestmentFlowMapper :model-value="mfDraft" :pool="invPools.mf" :holdings="mutualFunds" :bucket-options="bucketNamesFor('mutualFund')" :currency="planCurrency" pool-key="mf" @update:model-value="onMfRouting" @edit-as-list="invListOpen.mf = true" />
                   <UiCollapsible v-model:open="invListOpen.mf">
                     <UiCollapsibleTrigger as-child><UiButton variant="ghost" size="sm" class="text-muted-foreground">{{ invListOpen.mf ? 'Hide list editor' : 'Edit as list' }}</UiButton></UiCollapsibleTrigger>
@@ -255,7 +255,7 @@ async function save() {
                   </UiCollapsible>
                 </div>
                 <div v-if="invPools.stocks > 0 || stockDraft.length" class="space-y-2">
-                  <div class="flex items-center gap-2 text-sm font-medium"><TrendingUpIcon class="size-4 text-[var(--auto)]" /> Stocks <span class="text-muted-foreground">pool</span> <MoneyValue :amount="invPools.stocks" :currency="planCurrency" variant="total" /></div>
+                  <div class="flex items-center gap-2 text-sm font-medium"><TrendingUpIcon class="size-4 text-[var(--invest)]" /> Stocks <span class="text-muted-foreground">pool</span> <MoneyValue :amount="invPools.stocks" :currency="planCurrency" variant="total" /></div>
                   <InvestmentFlowMapper :model-value="stockDraft" :pool="invPools.stocks" :holdings="stocks" :bucket-options="bucketNamesFor('stock')" :currency="planCurrency" pool-key="stocks" @update:model-value="onStockRouting" @edit-as-list="invListOpen.stocks = true" />
                   <UiCollapsible v-model:open="invListOpen.stocks">
                     <UiCollapsibleTrigger as-child><UiButton variant="ghost" size="sm" class="text-muted-foreground">{{ invListOpen.stocks ? 'Hide list editor' : 'Edit as list' }}</UiButton></UiCollapsibleTrigger>

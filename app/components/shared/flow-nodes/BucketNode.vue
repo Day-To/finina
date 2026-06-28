@@ -1,5 +1,5 @@
 <script setup>
-// Bucket node. Receives a blue route edge from the Pool (left); fans out to its
+// Bucket node (EMERALD). Receives an emerald route edge from the Pool (left); fans out to its
 // fund leaves (right). Its share of the pool is PCT or fixed AMOUNT. Funds in
 // this bucket (by registry grouping) get their per-fund % on the leaf nodes.
 import { Handle, Position } from '@vue-flow/core'
@@ -10,7 +10,7 @@ defineProps({ id: { type: String, default: '' }, data: { type: Object, default: 
 
 <template>
   <div
-    class="group relative w-60 rounded-2xl border-2 border-[var(--auto)]/45 bg-card p-3.5 shadow-lg shadow-black/20 ring-1 ring-[var(--auto)]/10"
+    class="group relative w-60 rounded-2xl border-2 border-[var(--invest)]/45 bg-card p-3.5 shadow-lg shadow-black/20 ring-1 ring-[var(--invest)]/10"
     tabindex="0"
     :aria-label="`Bucket ${data.bucket || 'Unnamed'}, ${data.count} fund(s)`"
   >
@@ -18,7 +18,7 @@ defineProps({ id: { type: String, default: '' }, data: { type: Object, default: 
 
     <div class="flex items-center justify-between gap-2">
       <span class="flex min-w-0 items-center gap-2">
-        <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-[var(--auto)]/15 text-[var(--auto)]"><LayersIcon class="size-4" /></span>
+        <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-[var(--invest)]/15 text-[var(--invest)]"><LayersIcon class="size-4" /></span>
         <p class="truncate text-sm font-semibold">{{ data.bucket || 'Unnamed bucket' }}</p>
       </span>
       <UiBadge :variant="data.count ? 'secondary' : 'outline'">{{ data.count }}</UiBadge>

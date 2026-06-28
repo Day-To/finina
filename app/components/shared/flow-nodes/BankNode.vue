@@ -1,5 +1,5 @@
 <script setup>
-// Bank node (GREEN) — a transfer destination. Receives a green transfer edge
+// Bank node (BLUE) — a transfer destination. Receives a blue transfer edge
 // from Income (left handle); fans out to red expense leaves (right handle + "+").
 // Its transfer total is derived (sum of attached expenses), never typed.
 import { Handle, Position } from '@vue-flow/core'
@@ -10,7 +10,7 @@ defineProps({ id: { type: String, default: '' }, data: { type: Object, default: 
 
 <template>
   <div
-    class="group relative w-56 rounded-2xl border-2 border-positive/55 bg-card p-3.5 shadow-lg shadow-black/20 ring-1 ring-positive/10"
+    class="group relative w-56 rounded-2xl border-2 border-auto/55 bg-card p-3.5 shadow-lg shadow-black/20 ring-1 ring-auto/10"
     tabindex="0"
     :aria-label="`Bank ${data.name}, ${data.count} item(s), transfer ${data.total}${data.archived ? ', archived' : ''}`"
   >
@@ -18,7 +18,7 @@ defineProps({ id: { type: String, default: '' }, data: { type: Object, default: 
 
     <div class="flex items-center justify-between gap-2">
       <span class="flex min-w-0 items-center gap-2">
-        <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-positive/15 text-positive">
+        <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-auto/15 text-auto">
           <LandmarkIcon class="size-4" />
         </span>
         <p class="truncate text-sm font-semibold">{{ data.name }}</p>

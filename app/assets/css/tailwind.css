@@ -39,6 +39,35 @@
   --color-negative-foreground: var(--negative-foreground);
   --color-auto: var(--auto);
   --color-auto-foreground: var(--auto-foreground);
+  /* Semantic finance families (see CLAUDE.md "Color hierarchy"):
+     spend=red(=negative) · transfer=blue(=auto) · saving=green(=positive) · invest=emerald. */
+  --color-spend: var(--negative);
+  --color-transfer: var(--auto);
+  --color-saving: var(--positive);
+  --color-invest: var(--invest);
+  --color-invest-foreground: var(--invest-foreground);
+  /* Per-family shade ramps (1 = lightest → 5 = darkest) for charts/flows with
+     multiple items in one family. */
+  --color-spend-1: var(--spend-1);
+  --color-spend-2: var(--spend-2);
+  --color-spend-3: var(--spend-3);
+  --color-spend-4: var(--spend-4);
+  --color-spend-5: var(--spend-5);
+  --color-transfer-1: var(--transfer-1);
+  --color-transfer-2: var(--transfer-2);
+  --color-transfer-3: var(--transfer-3);
+  --color-transfer-4: var(--transfer-4);
+  --color-transfer-5: var(--transfer-5);
+  --color-saving-1: var(--saving-1);
+  --color-saving-2: var(--saving-2);
+  --color-saving-3: var(--saving-3);
+  --color-saving-4: var(--saving-4);
+  --color-saving-5: var(--saving-5);
+  --color-invest-1: var(--invest-1);
+  --color-invest-2: var(--invest-2);
+  --color-invest-3: var(--invest-3);
+  --color-invest-4: var(--invest-4);
+  --color-invest-5: var(--invest-5);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -87,6 +116,30 @@
   --negative-foreground: oklch(0.985 0 0);
   --auto: oklch(0.546 0.215 262.881);
   --auto-foreground: oklch(0.985 0 0);
+  /* Investment = emerald (distinct from saving's green). Brightens in dark below. */
+  --invest: oklch(0.55 0.13 165);
+  --invest-foreground: oklch(0.985 0 0);
+  /* Semantic shade ramps (1 lightest → 5 darkest), mode-independent like --chart-*. */
+  --spend-1: oklch(0.74 0.14 25);
+  --spend-2: oklch(0.67 0.19 25);
+  --spend-3: oklch(0.6 0.23 27);
+  --spend-4: oklch(0.53 0.2 27);
+  --spend-5: oklch(0.46 0.16 28);
+  --transfer-1: oklch(0.74 0.11 262);
+  --transfer-2: oklch(0.66 0.15 262);
+  --transfer-3: oklch(0.58 0.19 263);
+  --transfer-4: oklch(0.5 0.17 264);
+  --transfer-5: oklch(0.43 0.14 265);
+  --saving-1: oklch(0.8 0.14 150);
+  --saving-2: oklch(0.72 0.18 150);
+  --saving-3: oklch(0.63 0.19 149);
+  --saving-4: oklch(0.54 0.16 150);
+  --saving-5: oklch(0.46 0.12 151);
+  --invest-1: oklch(0.8 0.1 168);
+  --invest-2: oklch(0.7 0.13 167);
+  --invest-3: oklch(0.6 0.13 166);
+  --invest-4: oklch(0.5 0.11 166);
+  --invest-5: oklch(0.42 0.09 167);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.596 0.145 163.225);
@@ -127,6 +180,8 @@
   --negative-foreground: oklch(0.205 0 0);
   --auto: oklch(0.707 0.165 254.624);
   --auto-foreground: oklch(0.205 0 0);
+  --invest: oklch(0.72 0.15 165);
+  --invest-foreground: oklch(0.205 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.696 0.17 162.48);

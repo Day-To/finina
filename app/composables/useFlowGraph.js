@@ -112,10 +112,11 @@ export function reconcileSummary(d) {
   ].filter(Boolean).join(' · ')
 }
 
-// Edge styling by kind: 'transfer' (income→bank, GREEN), 'surplus' (→ a surplus
-// item, BLUE) or 'spend' (→ an expense, RED). Straight lines (no bends).
+// Edge styling by kind (CLAUDE.md color hierarchy): 'transfer' (income→bank,
+// BLUE), 'surplus' (→ a surplus item, GREEN = saving) or 'spend' (→ an expense,
+// RED). Straight lines (no bends).
 function edgeStyle(kind) {
-  const stroke = kind === 'transfer' ? 'var(--positive)' : kind === 'surplus' ? 'var(--auto)' : 'var(--negative)'
+  const stroke = kind === 'transfer' ? 'var(--auto)' : kind === 'surplus' ? 'var(--positive)' : 'var(--negative)'
   return {
     animated: true,
     type: 'straight',

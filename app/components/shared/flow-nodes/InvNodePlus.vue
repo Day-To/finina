@@ -46,7 +46,7 @@ function editAsList() { props.onEditAsList?.(); open.value = false }
           class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
           @click="addBucket(b)"
         >
-          <LayersIcon class="size-4 shrink-0 text-[var(--auto)]" />
+          <LayersIcon class="size-4 shrink-0 text-[var(--invest)]" />
           <span class="truncate">{{ b }}</span>
         </button>
         <button type="button" class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted" @click="editAsList">
@@ -62,7 +62,7 @@ function editAsList() { props.onEditAsList?.(); open.value = false }
           class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
           @click="addFund(f.id)"
         >
-          <CoinsIcon class="size-4 shrink-0 text-positive" />
+          <CoinsIcon class="size-4 shrink-0 text-invest" />
           <span class="truncate">{{ f.name }}</span>
         </button>
         <p v-if="!availableFunds.length" class="px-2 py-1.5 text-sm text-muted-foreground">All funds routed</p>

@@ -84,9 +84,9 @@ describe('buildInvestmentTree', () => {
     expect(nodes.filter((n) => n.type === 'fund')).toHaveLength(2)
     const routeEdge = edges.find((e) => e.id === 'route-lt')
     expect(routeEdge.source).toBe(poolNodeId('mf'))
-    expect(routeEdge.style.stroke).toBe('var(--auto)') // route edge blue
+    expect(routeEdge.style.stroke).toBe('var(--invest)') // route edge emerald
     const fundEdge = edges.find((e) => e.id === 'fund-lt-a')
-    expect(fundEdge.style.stroke).toBe('var(--positive)') // fund edge green
+    expect(fundEdge.style.stroke).toBe('var(--invest-2)') // fund edge emerald shade
     expect(fundEdge.label).toContain('60%')
   })
   it('badges a leaf from the live archived/paused Sets without changing its amount', () => {

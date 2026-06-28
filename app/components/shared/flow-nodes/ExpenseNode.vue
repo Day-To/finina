@@ -1,5 +1,5 @@
 <script setup>
-// End node (leaf) — an expense (RED) or a surplus split (BLUE). Target handle
+// End node (leaf) — an expense (RED) or a surplus split (GREEN = saving). Target handle
 // only (always terminal). "×" detaches it.
 import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
@@ -14,14 +14,14 @@ const isSurplus = computed(() => props.data.kind === 'surplus')
   <div
     :class="cn(
       'group relative w-52 rounded-2xl border-2 bg-card p-3 shadow-lg shadow-black/20 ring-1',
-      isSurplus ? 'border-[var(--auto)]/45 ring-[var(--auto)]/10' : 'border-negative/45 ring-negative/10',
+      isSurplus ? 'border-[var(--positive)]/45 ring-[var(--positive)]/10' : 'border-negative/45 ring-negative/10',
     )"
     tabindex="0"
     :aria-label="`${isSurplus ? 'Surplus' : 'Expense'} ${data.item || 'Untitled'}`"
   >
     <Handle type="target" :position="Position.Left" />
     <div class="flex items-center gap-2.5">
-      <span :class="cn('grid size-8 shrink-0 place-items-center rounded-xl', isSurplus ? 'bg-[var(--auto)]/15 text-[var(--auto)]' : 'bg-negative/15 text-negative')">
+      <span :class="cn('grid size-8 shrink-0 place-items-center rounded-xl', isSurplus ? 'bg-[var(--positive)]/15 text-[var(--positive)]' : 'bg-negative/15 text-negative')">
         <PiggyBankIcon v-if="isSurplus" class="size-4" />
         <ReceiptIcon v-else class="size-4" />
       </span>
@@ -31,7 +31,7 @@ const isSurplus = computed(() => props.data.kind === 'surplus')
           :amount="data.amount"
           :currency="data.currency"
           :variant="isSurplus ? 'default' : 'negative'"
-          :class="cn('text-sm font-bold', isSurplus && 'text-[var(--auto)]')"
+          :class="cn('text-sm font-bold', isSurplus && 'text-[var(--positive)]')"
         />
       </div>
     </div>
