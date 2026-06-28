@@ -5,8 +5,8 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { CalendarPlusIcon, FilePlusIcon, RefreshCwIcon, SaveIcon, ReceiptIcon, TrendingUpIcon, SparklesIcon } from '@lucide/vue'
-import { surplus, surplusAmounts, dailyBudget, accountTransfers, autoTransferTodos, investmentPools, investmentBreakdown, autoInvestmentTodos, totalExpenses } from '@/domain/calc/index.js'
+import { CalendarPlusIcon, FilePlusIcon, RefreshCwIcon, SaveIcon, ReceiptIcon, SparklesIcon, LayoutDashboardIcon, CalendarDaysIcon, WalletIcon, SlidersHorizontalIcon, TrendingUpIcon } from '@lucide/vue'
+import { surplus, surplusAmounts, dailyBudget, accountTransfers, autoTransferTodos, investmentPools, investmentBreakdown, autoInvestmentTodos, totalExpenses, totalFixed, totalVariable } from '@/domain/calc/index.js'
 import { newId } from '@/domain/ids.js'
 import { formatMonthLabel } from '@/lib/dates.js'
 
@@ -104,12 +104,6 @@ const isDeficit = computed(() => surplusPool.value < 0)
 const expensesTotal = computed(() => (draft.value ? totalExpenses(draft.value) : 0))
 const investmentTotal = computed(() => pools.value.mf + pools.value.stocks)
 const pctOfIncome = (v) => (draft.value?.income ? Math.round((v / draft.value.income) * 1000) / 10 : 0)
-const summaryCells = computed(() => [
-  { label: 'Income', amount: draft.value?.income ?? 0, band: 'bg-[var(--auto)]', pct: null },
-  { label: 'Expenses', amount: expensesTotal.value, band: 'bg-[var(--negative)]', pct: pctOfIncome(expensesTotal.value) },
-  { label: 'Investment', amount: investmentTotal.value, band: 'bg-[var(--positive)]', pct: pctOfIncome(investmentTotal.value) },
-  { label: 'Surplus (+/-)', amount: surplusPool.value, band: 'bg-amber-500', pct: null },
-])
 const flowSources = computed(() => {
   if (!draft.value) return []
   const f = (draft.value.fixedExpenses || []).map((l) => ({ id: l.id, item: l.item || 'Fixed item', amount: l.amount, kind: 'expense' }))
@@ -135,6 +129,19 @@ const editorHoldings = (kind) => {
   if (snap.length) return snap
   return kind === 'mutualFund' ? mutualFunds.value : stocks.value
 }
+
+// Per-type investment cards (only the types with a non-zero pool this month).
+const invTypes = computed(() => [
+  { key: 'mf', kind: 'mutualFund', label: 'Mutual Funds', accent: 'var(--positive)', route: 'mutual-funds', pool: pools.value.mf, breakdown: invBreakdown.value?.mf },
+  { key: 'stocks', kind: 'stock', label: 'Stocks', accent: 'var(--chart-4)', route: 'stocks', pool: pools.value.stocks, breakdown: invBreakdown.value?.stocks },
+].filter((t) => t.pool > 0))
+
+// Checklist completion (display only — never feeds dirty/comparable).
+const checklistProgress = computed(() => {
+  const list = draft.value?.checklist ?? []
+  const done = list.filter((c) => c.isDone).length
+  return { done, total: list.length, pct: list.length ? Math.round((done / list.length) * 100) : 0 }
+})
 
 // Re-pull one investment type's routing from the reusable plan (fresh ids),
 // discarding this month's manual tweaks for that type.
@@ -313,93 +320,167 @@ async function confirmResync() {
       </UiCardFooter>
     </UiCard>
 
-    <!-- Editable blocks -->
+    <!-- Dashboard -->
     <template v-else-if="draft">
-      <!-- Summary strip -->
-      <div class="grid grid-cols-2 overflow-hidden rounded-xl border sm:grid-cols-4">
-        <div v-for="(c, i) in summaryCells" :key="c.label" class="flex flex-col" :class="[i % 2 === 1 && 'border-l', i >= 2 && 'border-t sm:border-t-0', i >= 1 && 'sm:border-l']">
-          <div class="px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-wide text-white" :class="c.band">{{ c.label }}</div>
-          <div class="flex flex-1 flex-col items-center justify-center gap-0.5 px-3 py-3">
-            <MoneyValue :amount="c.amount" :currency="currency" class="text-base font-bold sm:text-lg" />
-            <span v-if="c.pct !== null" class="text-xs text-muted-foreground">({{ c.pct }}%)</span>
-          </div>
+      <!-- Overview — KPI tiles -->
+      <section class="space-y-4 border-t pt-8">
+        <div class="flex items-center gap-2.5">
+          <LayoutDashboardIcon class="size-4 text-primary" />
+          <h2 class="text-sm font-semibold tracking-tight">Overview</h2>
         </div>
-      </div>
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatTile label="Income" class="border-t-2 border-t-auto" hint="this month">
+            <MoneyValue :amount="draft.income ?? 0" :currency="currency" />
+          </StatTile>
+          <StatTile label="Expenses" class="border-t-2 border-t-negative" :hint="`${pctOfIncome(expensesTotal)}% of income`" hint-variant="negative">
+            <MoneyValue :amount="expensesTotal" :currency="currency" variant="negative" />
+          </StatTile>
+          <StatTile label="Investment" class="border-t-2 border-t-positive" :hint="`${pctOfIncome(investmentTotal)}% of income`" hint-variant="positive">
+            <MoneyValue :amount="investmentTotal" :currency="currency" variant="positive" />
+          </StatTile>
+          <StatTile label="Surplus" class="border-t-2 border-t-amber-500" :hint="isDeficit ? 'deficit' : 'kept this month'" :hint-variant="isDeficit ? 'negative' : 'positive'">
+            <MoneyValue :amount="surplusPool" :currency="currency" variant="auto" />
+          </StatTile>
+        </div>
+        <div v-if="isDeficit" class="flex items-center gap-2 rounded-md border border-negative/40 bg-negative/10 px-3 py-2 text-sm text-negative">
+          <span class="font-medium">Deficit:</span>
+          your expenses exceed income by <MoneyValue :amount="Math.abs(surplusPool)" :currency="currency" />.
+        </div>
+      </section>
 
-      <div v-if="isDeficit" class="flex items-center gap-2 rounded-md border border-negative/40 bg-negative/10 px-3 py-2 text-sm text-negative">
-        <span class="font-medium">Deficit:</span>
-        your expenses exceed income by <MoneyValue :amount="Math.abs(surplusPool)" :currency="currency" />.
-      </div>
+      <!-- Money flow — full end-to-end map (opens full-screen) -->
+      <section class="border-t pt-8">
+        <MoneyFlowView
+          :month="draft"
+          :accounts="accounts"
+          :accounts-by-id="accountsById"
+          :registry="investments"
+          :currency="currency"
+          :archived-fund-ids="archivedFundIds"
+          :paused-fund-ids="pausedFundIds"
+        />
+      </section>
 
-      
+      <!-- This month — income + notes + daily spending (left), checklist (right) -->
+      <section class="space-y-4 border-t pt-8">
+        <div class="flex items-center gap-2.5">
+          <CalendarDaysIcon class="size-4 text-primary" />
+          <h2 class="text-sm font-semibold tracking-tight">This month</h2>
+        </div>
+        <div class="grid items-start gap-4 lg:grid-cols-2">
+          <div class="space-y-4">
+            <UiCard>
+              <UiCardHeader><UiCardTitle class="text-base">Income</UiCardTitle></UiCardHeader>
+              <UiCardContent>
+                <div class="max-w-xs"><MoneyInput v-model="draft.income" :currency="currency" /></div>
+              </UiCardContent>
+            </UiCard>
 
-      <!-- Daily spending entry point -->
-      <UiCard class="border-primary/30 bg-primary/5">
-        <UiCardContent class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <div class="flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <ReceiptIcon class="size-4" />
-            </div>
-            <div class="text-sm">
-              <p class="font-medium">Daily spending</p>
-              <p class="text-muted-foreground">
-                Daily budget pool <MoneyValue :amount="dailyBudgetPool" :currency="currency" variant="total" /> — log day-to-day expenses here.
-              </p>
-            </div>
+            <UiCard>
+              <UiCardHeader>
+                <UiCardTitle class="text-base">Notes</UiCardTitle>
+              </UiCardHeader>
+              <UiCardContent>
+                <UiTextarea v-model="draft.notes" placeholder="e.g. One-off bonus this month, postponed the wedding fund transfer…" rows="4" />
+              </UiCardContent>
+            </UiCard>
+
+            <UiCard class="border-primary/30 bg-primary/5">
+              <UiCardContent class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <ReceiptIcon class="size-4" />
+                  </div>
+                  <div class="text-sm">
+                    <p class="font-medium">Daily spending</p>
+                    <p class="text-muted-foreground">
+                      Daily budget pool <MoneyValue :amount="dailyBudgetPool" :currency="currency" variant="total" /> — log day-to-day expenses here.
+                    </p>
+                  </div>
+                </div>
+                <UiButton as-child>
+                  <NuxtLink :to="`/months/${monthIdParam}/daily`"><ReceiptIcon class="size-4" /> Log daily expenses</NuxtLink>
+                </UiButton>
+              </UiCardContent>
+            </UiCard>
           </div>
-          <UiButton as-child>
-            <NuxtLink :to="`/months/${monthIdParam}/daily`"><ReceiptIcon class="size-4" /> Log daily expenses</NuxtLink>
-          </UiButton>
-        </UiCardContent>
-      </UiCard>
 
-      <div class="space-y-4">
-        <!-- Income (1/3) + Checklist (2/3) on desktop -->
-        <div class="grid items-start gap-4 lg:grid-cols-3">
-          <UiCard class="lg:col-span-1">
-            <UiCardHeader><UiCardTitle class="text-base">Income</UiCardTitle></UiCardHeader>
-            <UiCardContent>
-              <div class="max-w-xs">
-                <MoneyInput v-model="draft.income" :currency="currency" />
+          <UiCard>
+            <UiCardHeader>
+              <div class="flex items-center justify-between gap-3">
+                <UiCardTitle class="text-base">Checklist</UiCardTitle>
+                <div v-if="checklistProgress.total" class="flex items-center gap-2">
+                  <div class="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                    <div class="h-full rounded-full bg-primary transition-all" :style="{ width: `${checklistProgress.pct}%` }" />
+                  </div>
+                  <span class="whitespace-nowrap text-xs text-muted-foreground">{{ checklistProgress.done }} of {{ checklistProgress.total }} done</span>
+                </div>
               </div>
-            </UiCardContent>
-          </UiCard>
-          <UiCard class="lg:col-span-2">
-            <UiCardHeader><UiCardTitle class="text-base">Checklist</UiCardTitle></UiCardHeader>
+            </UiCardHeader>
             <UiCardContent>
               <Checklist v-model="draft.checklist" />
             </UiCardContent>
           </UiCard>
         </div>
+      </section>
 
-        <!-- Fixed + Variable expenses, equal columns -->
+      <!-- Expenditure — fixed + variable expense editors -->
+      <section class="space-y-4 border-t pt-8">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2.5">
+            <WalletIcon class="size-4 text-primary" />
+            <h2 class="text-sm font-semibold tracking-tight">Expenditure</h2>
+          </div>
+          <p class="text-sm text-muted-foreground">Your fixed and variable expenses for the month.</p>
+        </div>
         <div class="grid items-start gap-4 md:grid-cols-2">
-        <UiCard>
-          <UiCardHeader><UiCardTitle class="text-base">Fixed expenses</UiCardTitle></UiCardHeader>
-          <UiCardContent>
-            <EditableLineTable v-model="draft.fixedExpenses" :currency="currency" add-label="Add fixed expense" empty-text="No fixed expenses." :new-row="() => ({ source: 'MANUAL' })">
-              <template #extra="{ row }">
-                <UiBadge v-if="row.source === 'YEARLY'" variant="outline" class="text-[10px]" title="From yearly plan">🗓</UiBadge>
-              </template>
-            </EditableLineTable>
-          </UiCardContent>
-        </UiCard>
-
-        <UiCard>
-          <UiCardHeader><UiCardTitle class="text-base">Variable expenses</UiCardTitle></UiCardHeader>
-          <UiCardContent>
-            <EditableLineTable v-model="draft.variableExpenses" :currency="currency" add-label="Add variable expense" empty-text="No variable expenses." :new-row="() => ({ isDailyBudget: false, source: 'MANUAL' })">
-              <template #extra="{ row, setRow }">
-                <div class="flex items-center gap-2">
+          <UiCard>
+            <UiCardHeader>
+              <div class="flex items-center justify-between gap-2">
+                <UiCardTitle class="text-base">Fixed expenses</UiCardTitle>
+                <MoneyValue :amount="totalFixed(draft)" :currency="currency" variant="muted" class="text-sm" />
+              </div>
+            </UiCardHeader>
+            <UiCardContent>
+              <EditableLineTable v-model="draft.fixedExpenses" :currency="currency" add-label="Add fixed expense" empty-text="No fixed expenses." :show-total="false" :new-row="() => ({ source: 'MANUAL' })">
+                <template #extra="{ row }">
                   <UiBadge v-if="row.source === 'YEARLY'" variant="outline" class="text-[10px]" title="From yearly plan">🗓</UiBadge>
-                  <label class="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
-                    <UiCheckbox :model-value="row.isDailyBudget" @update:model-value="setRow({ isDailyBudget: !!$event })" /> Daily
-                  </label>
-                </div>
-              </template>
-            </EditableLineTable>
-          </UiCardContent>
-        </UiCard>
+                </template>
+              </EditableLineTable>
+            </UiCardContent>
+          </UiCard>
+
+          <UiCard>
+            <UiCardHeader>
+              <div class="flex items-center justify-between gap-2">
+                <UiCardTitle class="text-base">Variable expenses</UiCardTitle>
+                <MoneyValue :amount="totalVariable(draft)" :currency="currency" variant="muted" class="text-sm" />
+              </div>
+            </UiCardHeader>
+            <UiCardContent>
+              <EditableLineTable v-model="draft.variableExpenses" :currency="currency" add-label="Add variable expense" empty-text="No variable expenses." :show-total="false" :new-row="() => ({ isDailyBudget: false, source: 'MANUAL' })">
+                <template #extra="{ row, setRow }">
+                  <div class="flex items-center gap-2">
+                    <UiBadge v-if="row.source === 'YEARLY'" variant="outline" class="text-[10px]" title="From yearly plan">🗓</UiBadge>
+                    <label class="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
+                      <UiCheckbox :model-value="row.isDailyBudget" @update:model-value="setRow({ isDailyBudget: !!$event })" /> Daily
+                    </label>
+                  </div>
+                </template>
+              </EditableLineTable>
+            </UiCardContent>
+          </UiCard>
+        </div>
+      </section>
+
+      <!-- Plan & edit — the editable numbers -->
+      <section class="space-y-4 border-t pt-8">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2.5">
+            <SlidersHorizontalIcon class="size-4 text-primary" />
+            <h2 class="text-sm font-semibold tracking-tight">Plan &amp; edit</h2>
+          </div>
+          <p class="text-sm text-muted-foreground">Adjust this month’s numbers.</p>
         </div>
 
         <UiCard>
@@ -412,89 +493,50 @@ async function confirmResync() {
           </UiCardContent>
         </UiCard>
 
-        <UiCard v-if="hasInvestments">
-          <UiCardHeader>
-            <UiCardTitle class="text-base">Investments</UiCardTitle>
-            <UiCardDescription>Routing this month’s surplus into your funds and stocks.</UiCardDescription>
-          </UiCardHeader>
-          <UiCardContent class="space-y-6">
-            <template v-for="t in [{ key: 'mf', kind: 'mutualFund', label: 'Mutual Funds', holdings: editorHoldings('mutualFund'), pool: pools.mf, b: invBreakdown?.mf }, { key: 'stocks', kind: 'stock', label: 'Stocks', holdings: editorHoldings('stock'), pool: pools.stocks, b: invBreakdown?.stocks }]" :key="t.key">
-              <div v-if="t.pool > 0" class="space-y-2">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div class="flex items-center gap-2">
-                    <TrendingUpIcon class="size-4 text-primary" />
-                    <span class="font-medium">{{ t.label }}</span>
-                    <span class="text-sm text-muted-foreground">pool</span>
-                    <MoneyValue :amount="t.pool" :currency="currency" variant="total" />
-                  </div>
-                  <div class="flex items-center gap-1">
-                    <UiButton variant="link" size="sm" as-child><NuxtLink :to="`/investments/${t.kind === 'mutualFund' ? 'mutual-funds' : 'stocks'}`">Edit reusable plan →</NuxtLink></UiButton>
-                    <UiButton variant="ghost" size="sm" class="text-muted-foreground" @click="resetInvestmentToPlan(t.key)">Reset to plan</UiButton>
-                  </div>
-                </div>
-                <InvestmentFlowMapper
-                  v-model="draft.investments[t.key]"
-                  :pool="t.pool"
-                  :holdings="t.holdings"
-                  :bucket-options="bucketNamesFor(t.kind)"
-                  :currency="currency"
-                  :pool-key="t.key"
-                  :archived-fund-ids="archivedFundIds"
-                  :paused-fund-ids="pausedFundIds"
-                  @edit-as-list="invListOpen[t.key] = true"
-                />
-
-                <!-- Resolved per-fund amounts (which fund gets how much) -->
-                <div v-if="(t.b?.holdings?.length)" class="rounded-md border bg-muted/30 p-2">
-                  <p class="mb-1 px-1 text-xs font-medium text-muted-foreground">This month each {{ t.kind === 'mutualFund' ? 'fund' : 'stock' }} gets</p>
-                  <InvestmentDistribution :holdings="t.b.holdings" :currency="currency" :archived-fund-ids="archivedFundIds" :paused-fund-ids="pausedFundIds" />
-                </div>
-
-                <UiCollapsible v-model:open="invListOpen[t.key]">
-                  <UiCollapsibleContent class="pt-1">
-                    <BucketRoutingControl
-                      v-model="draft.investments[t.key]"
-                      :currency="currency"
-                      :sample-pool="t.pool"
-                      :holdings="t.holdings"
-                      :bucket-options="bucketNamesFor(t.kind)"
-                      :archived-fund-ids="archivedFundIds"
-                      :paused-fund-ids="pausedFundIds"
-                    />
-                  </UiCollapsibleContent>
-                </UiCollapsible>
-
-                <p class="flex items-center justify-end gap-1 text-sm">
-                  <span class="text-muted-foreground">Routed</span>
-                  <MoneyValue :amount="t.b?.total ?? 0" :currency="currency" variant="total" />
-                  <span class="text-muted-foreground">of</span>
-                  <MoneyValue :amount="t.pool" :currency="currency" variant="muted" />
-                </p>
-                <p v-if="t.b && (t.b.resolvedTotal !== t.b.total || t.b.invalidFundRows.length)" class="flex items-center justify-end gap-1 text-xs text-amber-600 dark:text-amber-400">
-                  Some of the pool isn't reaching a fund yet — open the flow to fix it.
-                </p>
-              </div>
-            </template>
-          </UiCardContent>
-        </UiCard>
-
         <UiCard>
-          <UiCardHeader><UiCardTitle class="text-base">Transfers</UiCardTitle></UiCardHeader>
+          <UiCardHeader>
+            <UiCardTitle class="text-base">Transfers</UiCardTitle>
+            <UiCardDescription>Assign each income, expense and surplus line to a bank account.</UiCardDescription>
+          </UiCardHeader>
           <UiCardContent>
             <FlowMapper v-model="draft.flow" :sources="flowSources" :accounts="accounts" :currency="currency" :income="draft.income" />
           </UiCardContent>
         </UiCard>
 
-        <UiCard>
-          <UiCardHeader>
-            <UiCardTitle class="text-base">Notes</UiCardTitle>
-            <UiCardDescription>Anything worth remembering about this month.</UiCardDescription>
-          </UiCardHeader>
-          <UiCardContent>
-            <UiTextarea v-model="draft.notes" placeholder="e.g. One-off bonus this month, postponed the wedding fund transfer…" rows="4" />
-          </UiCardContent>
-        </UiCard>
-      </div>
+      </section>
+
+      <!-- Investments — one segregated, colour-coded card per type -->
+      <section v-if="hasInvestments" class="space-y-4 border-t pt-8">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2.5">
+            <TrendingUpIcon class="size-4 text-primary" />
+            <h2 class="text-sm font-semibold tracking-tight">Investments</h2>
+          </div>
+          <p class="text-sm text-muted-foreground">Routing this month’s surplus into your funds and stocks.</p>
+        </div>
+        <div class="grid items-start gap-4" :class="invTypes.length > 1 && 'lg:grid-cols-2'">
+          <InvestmentTypeCard
+            v-for="t in invTypes" :key="t.key"
+            v-model="draft.investments[t.key]"
+            :pool-key="t.key"
+            :kind="t.kind"
+            :label="t.label"
+            :accent="t.accent"
+            :route="t.route"
+            :pool="t.pool"
+            :pct="pctOfIncome(t.pool)"
+            :breakdown="t.breakdown"
+            :currency="currency"
+            :holdings="editorHoldings(t.kind)"
+            :bucket-options="bucketNamesFor(t.kind)"
+            :archived-fund-ids="archivedFundIds"
+            :paused-fund-ids="pausedFundIds"
+            :list-open="invListOpen[t.key]"
+            @update:list-open="invListOpen[t.key] = $event"
+            @reset="resetInvestmentToPlan(t.key)"
+          />
+        </div>
+      </section>
     </template>
 
     <!-- Sticky save bar -->
