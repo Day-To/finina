@@ -19,7 +19,7 @@ const plan = usePlan(planType)
 const { accounts } = useBankAccounts()
 const { currency: defaultCurrency } = useSettings()
 const invPlan = useInvestmentPlan()
-const { mutualFunds, stocks, bucketNamesFor } = useInvestments()
+const { mutualFunds, stocks, activeInvestments, bucketNamesFor } = useInvestments()
 
 const planCurrency = computed(() => plan.activeVersion.value?.currency || defaultCurrency.value)
 
@@ -230,7 +230,7 @@ async function save() {
                   Allocate your surplus of
                   <MoneyValue :amount="surplusPool" :currency="planCurrency" variant="auto" class="font-medium" />.
                 </p>
-                <PercentSplitControl v-model="body.surplus" :currency="planCurrency" :surplus-pool="surplusPool" allow-routing />
+                <PercentSplitControl v-model="body.surplus" :currency="planCurrency" :surplus-pool="surplusPool" :holdings="activeInvestments" allow-routing />
               </div>
 
               <FlowMapper
