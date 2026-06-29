@@ -10,6 +10,7 @@
 
 import { surplusAmounts, sourceAmountMap, investmentPools, investmentBreakdown } from '../domain/calc/index.js'
 import { flattenAssignment, deriveFlow, reconcileSummary } from './useFlowGraph.js'
+import { titleSlot } from '../lib/nodeLayout.js'
 
 // Semantic finance families (see CLAUDE.md "Color hierarchy"): transfer = blue
 // (income + accounts), spend = red (expenses), saving = green, investment =
@@ -22,7 +23,12 @@ const C = {
 }
 const X = { income: 0, account: 320, item: 690, pool: 1080, bucket: 1430, fund: 1780 }
 const NODE_H = 66
-const ROW = 96 // vertical slot per leaf (node + gap)
+const ROW = 96 // vertical slot per single-line leaf (node + gap)
+// MoneyFlowNode (w-210, 13px title) wrapping: ~chars per line + px per extra line.
+// A single-line title keeps the ROW slot exactly; extra wrapped lines add height.
+const LEAF_CPL = 19
+const LEAF_LINE = 18
+const slotOf = (label) => titleSlot(label, ROW, LEAF_CPL, LEAF_LINE)
 
 /**
  * @returns {{ nodes: object[], edges: object[], reconcile: {balanced:boolean, summary:string}, counts: object }}
@@ -120,16 +126,19 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
 
   let cursor = 0
   for (const g of groups) {
-    const band = Math.max(1, g.items.length) * ROW
+    const slots = g.items.map((it) => slotOf(it.label))
+    const band = Math.max(ROW, slots.reduce((a, c) => a + c, 0))
     const accId = `acc-${g.accId}`
     const accAmt = g.warn ? g.items.reduce((s, i) => s + i.amount, 0) : d.sumFor(g.accId)
     addNode({ id: accId, x: X.account, y: cursor + band / 2 - NODE_H / 2, kind: g.warn ? 'warn' : 'account', eyebrow: g.warn ? 'Not assigned' : 'Account', label: g.name, amount: accAmt, accent: g.warn ? C.warn : C.account, badge: g.archived ? 'Archived' : undefined })
     addEdge('income', accId, accAmt, g.warn ? C.warn : C.transfer, true)
+    let iy = cursor
     g.items.forEach((it, i) => {
       const accent = itemAccent(it)
       const kind = (it.type === 'fixed' || it.type === 'variable') ? 'expense' : it.type === 'save' ? 'save' : it.type
-      addNode({ id: it.id, x: X.item, y: cursor + i * ROW + (ROW - NODE_H) / 2, kind, eyebrow: itemEyebrow(it), label: it.label, amount: it.amount, accent, badge: itemBadge(it) })
+      addNode({ id: it.id, x: X.item, y: iy + (slots[i] - NODE_H) / 2, kind, eyebrow: itemEyebrow(it), label: it.label, amount: it.amount, accent, badge: itemBadge(it) })
       addEdge(accId, it.id, it.amount, accent)
+      iy += slots[i]
     })
     cursor += band
   }
@@ -154,25 +163,29 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
       if (r.amount <= 0) continue
       if (r.kind === 'fund') {
         const leaf = b.holdings.find((h) => h.allocId === r.id)
-        const node = { id: `lf-${poolId}-${r.id}`, x: X.fund, y: fc + (ROW - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', eyebrow: 'Direct', label: leaf?.name || 'Fund', amount: r.amount, accent, badge: leaf ? fundBadge(leaf.id) : undefined, dim: !leaf }
+        const slot = slotOf(leaf?.name || 'Fund')
+        const node = { id: `lf-${poolId}-${r.id}`, x: X.fund, y: fc + (slot - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', eyebrow: 'Direct', label: leaf?.name || 'Fund', amount: r.amount, accent, badge: leaf ? fundBadge(leaf.id) : undefined, dim: !leaf }
         fNodes.push(node)
         if (leaf) leafIndex.set(`${poolId}:${leaf.id}`, node)
         fEdges.push({ from: `pool-${poolId}`, to: node.id, amt: r.amount, color: accent })
         fundCount++
-        fc += ROW
+        fc += slot
       }
       else {
         const leaves = b.holdings.filter((h) => h.allocId === r.id && h.amount > 0)
-        const band = Math.max(1, leaves.length) * ROW
+        const slots = leaves.map((h) => slotOf(h.name))
+        const band = Math.max(ROW, slots.reduce((a, c) => a + c, 0))
         const bid = `bk-${poolId}-${r.id}`
         fNodes.push({ id: bid, x: X.bucket, y: fc + band / 2 - NODE_H / 2, kind: 'bucket', eyebrow: 'Goal', label: r.bucket || 'Unbucketed', amount: r.amount, accent })
         fEdges.push({ from: `pool-${poolId}`, to: bid, amt: r.amount, color: accent })
+        let ly = fc
         leaves.forEach((h, i) => {
-          const node = { id: `lf-${poolId}-${r.id}-${h.id}`, x: X.fund, y: fc + i * ROW + (ROW - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', label: h.name, amount: h.amount, accent, badge: fundBadge(h.id), dim: archivedFundIds.has(h.id) }
+          const node = { id: `lf-${poolId}-${r.id}-${h.id}`, x: X.fund, y: ly + (slots[i] - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', label: h.name, amount: h.amount, accent, badge: fundBadge(h.id), dim: archivedFundIds.has(h.id) }
           fNodes.push(node)
           leafIndex.set(`${poolId}:${h.id}`, node)
           fEdges.push({ from: bid, to: node.id, amt: h.amount, color: accent })
           fundCount++
+          ly += slots[i]
         })
         fc += band
       }
@@ -199,11 +212,12 @@ export function buildMoneyGraph({ month, accounts = [], accountsById = null, reg
     const key = `${poolId}:${it.fundId}`
     let leaf = leafIndex.get(key)
     if (!leaf && validDirect[poolId]?.has(it.fundId)) {
-      leaf = { id: `lf-direct-${poolId}-${it.fundId}`, x: X.fund, y: fc + (ROW - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', eyebrow: 'Direct', label: nameByFund.get(it.fundId) || 'Fund', amount: 0, accent, badge: fundBadge(it.fundId) }
+      const slot = slotOf(nameByFund.get(it.fundId) || 'Fund')
+      leaf = { id: `lf-direct-${poolId}-${it.fundId}`, x: X.fund, y: fc + (slot - NODE_H) / 2, kind: poolId === 'stocks' ? 'stock' : 'fund', eyebrow: 'Direct', label: nameByFund.get(it.fundId) || 'Fund', amount: 0, accent, badge: fundBadge(it.fundId) }
       fNodes.push(leaf)
       leafIndex.set(key, leaf)
       fundCount++
-      fc += ROW
+      fc += slot
     }
     if (leaf) {
       leaf.amount += it.amount // a fund may get pool + direct (and several direct lines)

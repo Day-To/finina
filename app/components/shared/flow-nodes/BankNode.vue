@@ -21,7 +21,7 @@ defineProps({ id: { type: String, default: '' }, data: { type: Object, default: 
         <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-auto/15 text-auto">
           <LandmarkIcon class="size-4" />
         </span>
-        <p class="truncate text-sm font-semibold">{{ data.name }}</p>
+        <p class="min-w-0 break-words text-sm font-semibold">{{ data.name }}</p>
       </span>
       <UiBadge v-if="data.archived" variant="outline" class="shrink-0 text-muted-foreground">Archived</UiBadge>
       <UiBadge v-else :variant="data.count ? 'secondary' : 'outline'">{{ data.count }}</UiBadge>

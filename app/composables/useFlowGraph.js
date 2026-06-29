@@ -4,6 +4,8 @@
 //
 // flow = { incomeAccountId: string|null, allocations: [{ accountId, sourceIds[] }] }
 
+import { titleSlot } from '../lib/nodeLayout.js'
+
 export const NONE = '__none__'
 export const UNASSIGNED_ID = '__unassigned__'
 const ORPHAN_PREFIX = '__orphan__'
@@ -16,6 +18,10 @@ export const isSyntheticId = (id) => id === UNASSIGNED_ID || isOrphanId(id) || i
 // module needs no Vue Flow import. Left→right tree columns.
 const TREE_X = { income: 0, col1: 380, col2: 760 }
 const ROW_GAP = 104
+// Leaf (expense, w-52) title wrapping: ~chars per line + px added per extra line,
+// so multi-line names get a taller slot and never overlap the node below.
+const LEAF_CPL = 20
+const LEAF_LINE = 22
 export const BANK_PREFIX = 'bank-'
 export const EXP_PREFIX = 'exp-'
 export const bankNodeId = (accId) => `${BANK_PREFIX}${accId}`
@@ -181,32 +187,38 @@ export function buildTree({ sources, accounts, flow, income = 0, currency, place
     nodes.push({ id: expenseNodeId(s.id), type: 'expense', position: { x, y }, data: { sourceId: s.id, item: s.item, amount: s.amount, kind: s.kind, currency } })
   }
 
+  // Each leaf's slot grows with its wrapped title; the parent stays centered
+  // against the children band (single-line names keep the old ROW_GAP spacing).
+  const leafSlot = (s) => titleSlot(s.item || 'Untitled', ROW_GAP, LEAF_CPL, LEAF_LINE)
   let cursor = 0
   for (const g of groups) {
-    const band = Math.max(1, g.children.length) * ROW_GAP
+    if (g.kind === 'incomeExpense') {
+      const band = leafSlot(g.source)
+      expenseNode(g.source, TREE_X.col1, cursor + (band - ROW_GAP) / 2)
+      edges.push({ ...edgeStyle(spendKind(g.source)), id: `e-${g.source.id}`, source: 'income', target: expenseNodeId(g.source.id) })
+      cursor += band
+      continue
+    }
+    const slots = g.children.map(leafSlot)
+    const band = Math.max(ROW_GAP, slots.reduce((a, b) => a + b, 0))
     const parentY = cursor + (band - ROW_GAP) / 2
+    const parentId = g.kind === 'bank' ? bankNodeId(g.accId) : orphanId(g.accId)
     if (g.kind === 'bank') {
       nodes.push({
         id: bankNodeId(g.accId), type: 'bank', position: { x: TREE_X.col1, y: parentY },
         data: { accountId: g.accId, name: d.accountById.get(g.accId)?.name ?? '', total: d.sumFor(g.accId), count: d.countFor(g.accId), archived: !!d.accountById.get(g.accId)?.archived, currency },
       })
       edges.push({ ...edgeStyle('transfer'), id: `t-${g.accId}`, source: 'income', target: bankNodeId(g.accId) })
-      g.children.forEach((s, i) => {
-        expenseNode(s, TREE_X.col2, cursor + i * ROW_GAP)
-        edges.push({ ...edgeStyle(spendKind(s)), id: `e-${s.id}`, source: bankNodeId(g.accId), target: expenseNodeId(s.id) })
-      })
-    }
-    else if (g.kind === 'incomeExpense') {
-      expenseNode(g.source, TREE_X.col1, parentY)
-      edges.push({ ...edgeStyle(spendKind(g.source)), id: `e-${g.source.id}`, source: 'income', target: expenseNodeId(g.source.id) })
     }
     else {
       nodes.push({ id: orphanId(g.accId), type: 'orphan', position: { x: TREE_X.col1, y: parentY }, data: { accId: g.accId, count: d.countFor(g.accId), accounts: accs, currency } })
-      g.children.forEach((s, i) => {
-        expenseNode(s, TREE_X.col2, cursor + i * ROW_GAP)
-        edges.push({ ...edgeStyle(spendKind(s)), id: `e-${s.id}`, source: orphanId(g.accId), target: expenseNodeId(s.id) })
-      })
     }
+    let y = cursor
+    g.children.forEach((s, i) => {
+      expenseNode(s, TREE_X.col2, y)
+      edges.push({ ...edgeStyle(spendKind(s)), id: `e-${s.id}`, source: parentId, target: expenseNodeId(s.id) })
+      y += slots[i]
+    })
     cursor += band
   }
 

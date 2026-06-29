@@ -34,7 +34,7 @@ const icon = () => ICON[props.data.kind] || WalletIcon
 
     <div class="min-w-0 flex-1">
       <p v-if="data.eyebrow" class="truncate text-[9px] font-semibold uppercase leading-none tracking-wider text-muted-foreground">{{ data.eyebrow }}</p>
-      <p class="mt-0.5 truncate text-[13px] font-semibold leading-tight">{{ data.label }}</p>
+      <p class="mt-0.5 break-words text-[13px] font-semibold leading-tight">{{ data.label }}</p>
       <div class="flex items-baseline gap-1.5">
         <MoneyValue :amount="data.amount" :currency="data.currency" variant="total" class="text-xs" />
         <span v-if="data.sub" class="shrink-0 truncate text-[10px] text-muted-foreground">{{ data.sub }}</span>

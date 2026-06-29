@@ -95,19 +95,119 @@ export function buildMonthSeed(monthlyVersion, yearlyVersion, monthId, currency,
     checklist: [],
   }
 
-  // Checklist = manual plan to-dos + freshly generated auto-transfer to-dos
-  // (auto to-dos are regenerated from the seed's flow, never copied, to avoid
-  // duplicates and keep them in sync with the actual allocations).
+  // Checklist = manual to-dos + freshly generated auto-transfer to-dos (auto
+  // to-dos are regenerated from the seed's flow, never copied, to avoid duplicates
+  // and keep them in sync with the actual allocations).
   const manualTodos = (monthlyVersion?.todos ?? [])
     .filter((t) => !t.isAuto)
     .map((t) => ({ id: newId(), label: t.label, isDone: false, isAuto: false, order: t.order ?? 0 }))
-  const autoTodos = autoTransferTodos(seed, cur, accountsById).map((t) => ({
+  seed.checklist = buildChecklist(seed, cur, accountsById, manualTodos)
+
+  return seed
+}
+
+/**
+ * Build a month's checklist: the given MANUAL to-dos (already shaped as
+ * {id,label,isDone,isAuto:false,order}) followed by freshly generated auto
+ * transfer + investment to-dos, regenerated from the seed's own flow/pools so
+ * they stay in sync, then re-indexed by order. Shared by buildMonthSeed and
+ * buildMonthCopy so both produce identical checklists.
+ * @param {object} seed a month seed (carries flow + surplus + investments)
+ * @param {string} currency ISO 4217 code (for the formatted amounts)
+ * @param {Map|Object} [accountsById] account-name lookup for transfer labels
+ * @param {Array} manualTodos manual to-dos in the uniform line shape
+ * @returns {Array} the ordered checklist
+ */
+export function buildChecklist(seed, currency, accountsById, manualTodos) {
+  const autoTodos = autoTransferTodos(seed, currency, accountsById).map((t) => ({
     id: t.id, label: t.label, isDone: false, isAuto: true, accountId: t.accountId ?? null, order: 0,
   }))
-  const invTodos = autoInvestmentTodos(seed, cur).map((t) => ({
+  const invTodos = autoInvestmentTodos(seed, currency).map((t) => ({
     id: t.id, label: t.label, isDone: false, isAuto: true, accountId: t.accountId ?? null, order: 0,
   }))
-  seed.checklist = [...manualTodos, ...autoTodos, ...invTodos].map((t, i) => ({ ...t, order: i }))
+  return [...(manualTodos ?? []), ...autoTodos, ...invTodos].map((t, i) => ({ ...t, order: i }))
+}
+
+/**
+ * Duplicate an existing materialized Month into a fresh seed for another month —
+ * the "Copy another month" path (§7). Copies the SETUP (income, expense lines +
+ * amounts, money flow + bank routing, investment routing + frozen holdings,
+ * manual checklist items) and RESETS progress (checklist done-states, notes, and
+ * — handled by the caller — the daily-expenses subcollection are NOT carried).
+ *
+ * Mirrors buildMonthSeed's invariants: fresh UUIDs on every line (remapped through
+ * one idMap), flow sourceIds remapped old→new (unresolved refs dropped), routing
+ * deep-cloned with fresh ids, targetFundId/holdings preserved verbatim (they are
+ * HOLDING ids, never line ids). Yearly-due one-offs (source 'YEARLY') are dropped
+ * — they belong only to the month they're due in, re-added by Generate/Re-sync.
+ *
+ * @param {object} sourceMonth the month doc being copied
+ * @param {string} targetMonthId "YYYY-MM" of the new month
+ * @param {string} [currency] ISO code to stamp (defaults to the source's)
+ * @param {Map|Object} [accountsById] account-name lookup for auto to-do labels
+ * @param {Array} [registry] live holdings registry — used only to freeze a snapshot
+ *   when copying a legacy source that never froze one
+ * @returns {object} Month seed (sans createdAt/updatedAt — the repo stamps those)
+ */
+export function buildMonthCopy(sourceMonth, targetMonthId, currency, accountsById, registry) {
+  const cur = currency ?? sourceMonth?.currency
+  const idMap = new Map()
+  const remap = (oldId) => {
+    const nid = newId()
+    if (oldId != null) idMap.set(oldId, nid)
+    return nid
+  }
+
+  // Keep MONTHLY/MANUAL lines verbatim (only id + order change); drop YEARLY-due
+  // one-offs. Spread is a sufficient clone — lines are flat (all-primitive fields),
+  // so the copy shares no references with the source.
+  const notYearly = (l) => l.source !== 'YEARLY'
+  const fixedExpenses = (sourceMonth?.fixedExpenses ?? []).filter(notYearly).map((l, i) => ({ ...l, id: remap(l.id), order: i }))
+  const variableExpenses = (sourceMonth?.variableExpenses ?? []).filter(notYearly).map((l, i) => ({ ...l, id: remap(l.id), order: i }))
+  const surplus = (sourceMonth?.surplus ?? []).filter(notYearly).map((l, i) => ({ ...l, id: remap(l.id), order: i }))
+
+  // Remap flow source refs old→new; refs to dropped/missing lines fall out.
+  const allocations = (sourceMonth?.flow?.allocations ?? []).map((a) => ({
+    accountId: a.accountId,
+    sourceIds: (a.sourceIds ?? []).map((sid) => idMap.get(sid)).filter(Boolean),
+  }))
+  const flow = { incomeAccountId: sourceMonth?.flow?.incomeAccountId ?? null, allocations }
+
+  // Deep-clone the routing tree with fresh ids (kind/funds/fundId survive).
+  const snapRouting = (rows) => (rows ?? []).map((r, i) => ({ ...JSON.parse(JSON.stringify(r)), id: newId(), order: i }))
+  const srcInv = sourceMonth?.investments ?? {}
+  // Holdings: copy the source's frozen snapshot verbatim (keeps routing internally
+  // consistent). Only a legacy source that never froze one falls back to freezing
+  // from the live registry — mirrors investmentBreakdown's own fallback.
+  const holdings = srcInv.holdingsFrozen || srcInv.holdings?.length
+    ? (srcInv.holdings ?? []).map((h) => ({ ...h }))
+    : (registry ?? []).filter((h) => !h.archived).map((h) => ({ id: h.id, kind: h.kind, name: h.name ?? '', bucket: h.bucket ?? '', active: h.active !== false }))
+  const investments = {
+    mf: snapRouting(srcInv.mf),
+    stocks: snapRouting(srcInv.stocks),
+    holdings,
+    holdingsFrozen: true,
+  }
+
+  const seed = {
+    month: targetMonthId,
+    currency: cur,
+    seededFrom: null, // a copy is not plan-seeded; the badge keys off copiedFrom
+    copiedFrom: sourceMonth?.month ?? null,
+    income: sourceMonth?.income ?? 0,
+    fixedExpenses,
+    variableExpenses,
+    surplus,
+    flow,
+    investments,
+    notes: '', // month-specific; reset like a fresh month
+    checklist: [],
+  }
+
+  const manualTodos = (sourceMonth?.checklist ?? [])
+    .filter((c) => !c.isAuto)
+    .map((t, i) => ({ id: newId(), label: t.label, isDone: false, isAuto: false, order: t.order ?? i }))
+  seed.checklist = buildChecklist(seed, cur, accountsById, manualTodos)
 
   return seed
 }

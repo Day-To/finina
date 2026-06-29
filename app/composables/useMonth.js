@@ -6,7 +6,7 @@ import { monthsRepo } from '~/repositories/months.js'
 import { plansRepo } from '~/repositories/plans.js'
 import { planVersionsRepo } from '~/repositories/planVersions.js'
 import { investmentPlanRepo } from '~/repositories/investmentPlan.js'
-import { buildMonthSeed } from '~/domain/calc/seed.js'
+import { buildMonthSeed, buildMonthCopy } from '~/domain/calc/seed.js'
 import { totalFixed, totalVariable, totalExpenses, surplus, surplusAmounts, accountTransfers, reconcile } from '~/domain/calc/index.js'
 import { DEFAULT_CURRENCY } from '~/domain/currencies.js'
 
@@ -90,6 +90,25 @@ export function useMonth(monthIdRef) {
     const { monthlyVersion, yearlyVersion, investmentPlan } = await loadActiveVersions()
     if (!monthlyVersion) throw new Error('No active monthly plan to materialize from')
     const seed = buildMonthSeed(monthlyVersion, yearlyVersion, monthId.value, seedCurrency(monthlyVersion), accountsById.value, investmentPlan, investments.value)
+    await monthsRepo.upsert(uid(), monthId.value, seed)
+    return seed
+  }
+
+  /** Other materialized months (newest-first) that this month could be copied from. */
+  async function listCopyableMonths() {
+    const all = await monthsRepo.list(uid())
+    return all.filter((m) => m.month !== monthId.value)
+  }
+
+  /**
+   * Materialize this month by COPYING another month's setup (income, expense lines,
+   * money flow, investment routing, manual checklist) — progress reset, daily
+   * expenses not carried. See buildMonthCopy.
+   */
+  async function copyFromMonth(sourceMonthId) {
+    const src = await monthsRepo.get(uid(), sourceMonthId)
+    if (!src) throw new Error('Source month not found')
+    const seed = buildMonthCopy(src, monthId.value, src.currency, accountsById.value, investments.value)
     await monthsRepo.upsert(uid(), monthId.value, seed)
     return seed
   }
@@ -185,6 +204,9 @@ export function useMonth(monthIdRef) {
         return c
       }),
       notes: cur.notes ?? '',
+      // Re-syncing makes the month plan-sourced again (next.seededFrom is set), so
+      // drop any "copied" provenance — otherwise the merge would leave it sticky.
+      copiedFrom: null,
       createdAt: cur.createdAt,
     }
     await monthsRepo.upsert(uid(), monthId.value, merged)
@@ -198,6 +220,8 @@ export function useMonth(monthIdRef) {
     exists,
     totals,
     materializeFromPlans,
+    listCopyableMonths,
+    copyFromMonth,
     createBlank,
     save,
     remove,

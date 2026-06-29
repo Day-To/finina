@@ -276,6 +276,9 @@ export const monthSchema = z.object({
   month: monthId,
   currency: currencyCode,
   seededFrom: seededFromSchema.default(null),
+  // Provenance for a month created via "Copy another month": the source month's
+  // "YYYY-MM" id (null otherwise). Drives the "Copied" badge; cleared on re-sync.
+  copiedFrom: monthId.nullable().default(null),
   income: minorAmount.default(0),
   fixedExpenses: z.array(fixedLineSchema).default([]),
   variableExpenses: z.array(variableLineSchema).default([]),

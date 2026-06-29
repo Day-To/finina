@@ -26,7 +26,7 @@ const isSurplus = computed(() => props.data.kind === 'surplus')
         <ReceiptIcon v-else class="size-4" />
       </span>
       <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-semibold">{{ data.item || 'Untitled' }}</p>
+        <p class="break-words text-sm font-semibold">{{ data.item || 'Untitled' }}</p>
         <MoneyValue
           :amount="data.amount"
           :currency="data.currency"

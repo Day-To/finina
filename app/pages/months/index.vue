@@ -118,8 +118,8 @@ async function confirmDelete() {
               <NuxtLink :to="`/months/${m.month}`">
                 <div class="flex w-full items-center gap-2 pr-7">
                   <span class="truncate font-medium">{{ formatMonthLabel(m.month) }}</span>
-                  <UiBadge :variant="m.seededFrom ? 'secondary' : 'outline'" class="shrink-0">
-                    {{ m.seededFrom ? 'Planned' : 'Blank' }}
+                  <UiBadge :variant="m.copiedFrom || m.seededFrom ? 'secondary' : 'outline'" class="shrink-0">
+                    {{ m.copiedFrom ? 'Copied' : m.seededFrom ? 'Planned' : 'Blank' }}
                   </UiBadge>
                 </div>
                 <div class="grid w-full grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-x-3">

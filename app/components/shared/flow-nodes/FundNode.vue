@@ -31,7 +31,7 @@ const editable = computed(() => !props.data.invalid && !archived.value) // archi
       </span>
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-1.5">
-          <p class="truncate text-sm font-semibold">{{ data.name }}</p>
+          <p class="min-w-0 flex-1 break-words text-sm font-semibold">{{ data.name }}</p>
           <UiBadge v-if="archived" variant="outline" class="shrink-0 text-muted-foreground">Archived</UiBadge>
           <span v-else-if="paused" class="shrink-0 text-[11px] text-muted-foreground">paused</span>
         </div>

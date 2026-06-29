@@ -19,7 +19,7 @@ defineProps({ id: { type: String, default: '' }, data: { type: Object, default: 
     <div class="flex items-center justify-between gap-2">
       <span class="flex min-w-0 items-center gap-2">
         <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-[var(--invest)]/15 text-[var(--invest)]"><LayersIcon class="size-4" /></span>
-        <p class="truncate text-sm font-semibold">{{ data.bucket || 'Unnamed bucket' }}</p>
+        <p class="min-w-0 break-words text-sm font-semibold">{{ data.bucket || 'Unnamed bucket' }}</p>
       </span>
       <UiBadge :variant="data.count ? 'secondary' : 'outline'">{{ data.count }}</UiBadge>
     </div>

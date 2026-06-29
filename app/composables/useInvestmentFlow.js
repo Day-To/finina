@@ -8,6 +8,7 @@
 import { investmentTypeBreakdown } from '../domain/calc/investments.js'
 import { newId } from '../domain/ids.js'
 import { formatMoney } from '../domain/money.js'
+import { titleSlot } from '../lib/nodeLayout.js'
 
 export const POOL_PREFIX = 'pool-'
 export const BUCKET_PREFIX = 'bk-'
@@ -18,6 +19,14 @@ export const fundNodeId = (allocId, fundId) => `${FUND_PREFIX}${allocId}-${fundI
 
 const TREE_X = { pool: 0, col1: 380, col2: 760 }
 const ROW_GAP = 104
+// Fund-leaf (w-52) sizing. The investment fund node also carries a routing-control
+// row (the % input), so its single-line height (~108px) is TALLER than ROW_GAP —
+// LEAF_BASE is its slot incl. an inter-node gap, and titles wrap to the full name
+// adding LEAF_LINE px per extra line.
+const LEAF_CPL = 20
+const LEAF_LINE = 22
+const LEAF_BASE = 144 // single-line fund-leaf slot (node + control row + gap)
+const BUCKET_H = 150 // bucket node nominal height (for centering + min band)
 
 /** Wrap the calc breakdown with a `balanced` flag (mirrors deriveFlow). */
 export function deriveInvestment(pool, routing, holdings) {
@@ -111,35 +120,39 @@ export function buildInvestmentTree({ poolKey, pool, routing, holdings, currency
     data: { poolKey, pool, routed: d.total, resolvedTotal: d.resolvedTotal, currency },
   })
 
+  // Fund-leaf slot grows with its wrapped name (LEAF_BASE accounts for the control
+  // row); leaves stack top-down and the bucket is centered against the band.
+  const leafSlot = (name) => titleSlot(name, LEAF_BASE, LEAF_CPL, LEAF_LINE)
   let cursor = 0
   for (const r of d.rows) {
     if (r.kind === 'fund') {
       const leaf = (leavesByAlloc.get(r.id) ?? [])[0]
-      const band = ROW_GAP
-      const y = cursor + (band - ROW_GAP) / 2
       nodes.push({
-        id: fundNodeId(r.id, r.fundId), type: 'fund', position: { x: TREE_X.col1, y },
+        id: fundNodeId(r.id, r.fundId), type: 'fund', position: { x: TREE_X.col1, y: cursor },
         data: { allocId: r.id, parentKind: 'pool', fundId: r.fundId, name: leaf?.name ?? '(missing fund)', amount: r.amount, pct: 100, mode: r.mode, value: r.value, invalid: !leaf, archived: archivedFundIds.has(r.fundId), paused: pausedFundIds.has(r.fundId), currency },
       })
       edges.push({ ...edgeStyle('route'), id: `route-${r.id}`, source: poolId, target: fundNodeId(r.id, r.fundId), label: routeLabel(r, currency) })
-      cursor += band
+      cursor += leafSlot(leaf?.name ?? '(missing fund)')
     }
     else {
       const leaves = leavesByAlloc.get(r.id) ?? []
-      const band = Math.max(1, leaves.length) * ROW_GAP
-      const parentY = cursor + (band - ROW_GAP) / 2
+      const slots = leaves.map((leaf) => leafSlot(leaf.name))
+      const band = Math.max(BUCKET_H + 30, slots.reduce((a, b) => a + b, 0))
+      const parentY = cursor + (band - BUCKET_H) / 2
       nodes.push({
         id: bucketNodeId(r.id), type: 'bucket', position: { x: TREE_X.col1, y: parentY },
         data: { allocId: r.id, bucket: r.bucket, mode: r.mode, value: r.value, amount: r.amount, count: leaves.length, funds: r.funds ?? [], currency },
       })
       edges.push({ ...edgeStyle('route'), id: `route-${r.id}`, source: poolId, target: bucketNodeId(r.id), label: routeLabel(r, currency) })
       const rawPctOf = (fundId) => (r.funds ?? []).find((f) => f.fundId === fundId)?.pct ?? null
+      let y = cursor
       leaves.forEach((leaf, i) => {
         nodes.push({
-          id: fundNodeId(r.id, leaf.fundId), type: 'fund', position: { x: TREE_X.col2, y: cursor + i * ROW_GAP },
+          id: fundNodeId(r.id, leaf.fundId), type: 'fund', position: { x: TREE_X.col2, y },
           data: { allocId: r.id, parentKind: 'bucket', fundId: leaf.fundId, name: leaf.name, amount: leaf.amount, pct: leaf.pct, rawPct: rawPctOf(leaf.fundId), archived: archivedFundIds.has(leaf.fundId), paused: pausedFundIds.has(leaf.fundId), currency },
         })
         edges.push({ ...edgeStyle('fund'), id: `fund-${r.id}-${leaf.fundId}`, source: bucketNodeId(r.id), target: fundNodeId(r.id, leaf.fundId), label: `${leaf.pct}% · ${formatMoney(leaf.amount, currency)}` })
+        y += slots[i]
       })
       cursor += band
     }

@@ -5,7 +5,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { CalendarPlusIcon, FilePlusIcon, RefreshCwIcon, SaveIcon, ReceiptIcon, SparklesIcon, LayoutDashboardIcon, CalendarDaysIcon, WalletIcon, SlidersHorizontalIcon, TrendingUpIcon, Trash2Icon } from '@lucide/vue'
+import { CalendarPlusIcon, FilePlusIcon, CopyIcon, RefreshCwIcon, SaveIcon, ReceiptIcon, SparklesIcon, LayoutDashboardIcon, CalendarDaysIcon, WalletIcon, SlidersHorizontalIcon, TrendingUpIcon, Trash2Icon } from '@lucide/vue'
 import { surplus, surplusAmounts, dailyBudget, accountTransfers, autoTransferTodos, investmentPools, investmentBreakdown, investedTotal, directRoutings, autoInvestmentTodos, totalExpenses, totalFixed, totalVariable } from '@/domain/calc/index.js'
 import { newId } from '@/domain/ids.js'
 import { formatMonthLabel } from '@/lib/dates.js'
@@ -14,7 +14,7 @@ definePageMeta({ key: (route) => route.fullPath })
 
 const route = useRoute()
 const monthIdParam = computed(() => route.params.month)
-const { month, loading, exists, materializeFromPlans, createBlank, save, remove, previewResync, applyResync } = useMonth(monthIdParam)
+const { month, loading, exists, materializeFromPlans, createBlank, save, remove, previewResync, applyResync, listCopyableMonths, copyFromMonth } = useMonth(monthIdParam)
 const { accounts, byId: accountsById } = useBankAccounts()
 const { investments, mutualFunds, stocks, bucketNamesFor, archivedFundIds, pausedFundIds, loading: invLoading } = useInvestments()
 const investmentPlanStore = useInvestmentPlan()
@@ -229,6 +229,19 @@ async function blank() {
   finally { busy.value = false }
 }
 
+// ── Copy from another month ────────────────────────────────────────────────────
+const copyOpen = ref(false)
+async function copyFrom(sourceMonthId) {
+  busy.value = true
+  try {
+    await copyFromMonth(sourceMonthId)
+    copyOpen.value = false // close only on success, so a failure keeps the user's pick
+    toast.success('Month copied')
+  }
+  catch { toast.error('Could not copy month') }
+  finally { busy.value = false }
+}
+
 const saving = ref(false)
 async function saveChanges() {
   if (!draft.value || saving.value) return
@@ -349,6 +362,8 @@ async function confirmDelete() {
       @complete="onStartMonthComplete"
     />
 
+    <CopyMonthDialog v-model:open="copyOpen" :loader="listCopyableMonths" @select="copyFrom" />
+
     <!-- Loading -->
     <div v-if="loading && !draft" class="space-y-4">
       <UiSkeleton class="h-32 w-full" />
@@ -359,10 +374,11 @@ async function confirmDelete() {
     <UiCard v-else-if="!exists">
       <UiCardHeader>
         <UiCardTitle>This month isn’t set up yet</UiCardTitle>
-        <UiCardDescription>Generate it from your active monthly plan (plus any yearly items due), or start blank.</UiCardDescription>
+        <UiCardDescription>Generate it from your active monthly plan (plus any yearly items due), copy the setup from another month, or start blank.</UiCardDescription>
       </UiCardHeader>
       <UiCardFooter class="flex flex-wrap gap-2">
         <UiButton :disabled="busy || invLoading" @click="generate"><CalendarPlusIcon class="size-4" /> Generate from plan</UiButton>
+        <UiButton variant="outline" :disabled="busy || invLoading" @click="copyOpen = true"><CopyIcon class="size-4" /> Copy another month</UiButton>
         <UiButton variant="outline" :disabled="busy" @click="blank"><FilePlusIcon class="size-4" /> Blank month</UiButton>
       </UiCardFooter>
     </UiCard>
