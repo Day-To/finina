@@ -114,7 +114,11 @@ async function submit() {
                   <span class="truncate">{{ form.date ? formatDateLabel(form.date, locale) : 'Pick a date' }}</span>
                 </UiButton>
               </UiPopoverTrigger>
-              <UiPopoverContent class="w-auto p-0" align="start">
+              <!-- disable-portal: the popover lives inside the modal Sheet; teleporting
+                   it to <body> leaves it outside the dialog's focus + pointer-events
+                   region, so on Safari the calendar opens but isn't tappable. Keeping
+                   it inline (fixed strategy so it still floats above the sheet) fixes it. -->
+              <UiPopoverContent class="w-auto p-0" align="start" disable-portal position-strategy="fixed">
                 <UiCalendar v-model="dateValue" :min-value="minValue" :max-value="maxValue" weekday-format="short" class="[--cell-size:--spacing(9)]" initial-focus />
               </UiPopoverContent>
             </UiPopover>

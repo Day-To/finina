@@ -32,6 +32,11 @@ const props = defineProps({
   asChild: { type: Boolean, required: false },
   as: { type: null, required: false },
   disableOutsidePointerEvents: { type: Boolean, required: false },
+  // Render the content in place instead of teleporting to <body>. Needed when the
+  // popover lives inside a modal dialog/sheet: a portalled popover lands outside
+  // the dialog's focus scope + pointer-events region, so on Safari the content
+  // opens but isn't interactive. Keeping it inline puts it back inside the dialog.
+  disablePortal: { type: Boolean, required: false },
   class: { type: null, required: false },
 });
 const emits = defineEmits([
@@ -43,13 +48,13 @@ const emits = defineEmits([
   "closeAutoFocus",
 ]);
 
-const delegatedProps = reactiveOmit(props, "class");
+const delegatedProps = reactiveOmit(props, "class", "disablePortal");
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits);
 </script>
 
 <template>
-  <PopoverPortal>
+  <PopoverPortal :disabled="disablePortal">
     <PopoverContent
       data-slot="popover-content"
       v-bind="{ ...$attrs, ...forwarded }"
