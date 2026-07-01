@@ -26,6 +26,7 @@ const nav = [
   { to: '/investments', label: 'Investments', icon: TrendingUpIcon },
   { to: '/months', label: 'Months', icon: CalendarDaysIcon },
   { to: '/insights', label: 'Insights', icon: LineChartIcon },
+  { to: '/alerts', label: 'Reminders', icon: BellIcon },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 // Curated 4 for the mobile bottom bar (around the center "+"). Accounts lives in
