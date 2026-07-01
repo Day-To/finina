@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA0JeQSbV7jQcmiCTR4_TfOyMvdgqne5Bk',
@@ -15,6 +16,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig)
   const auth = getAuth(app)
   const db = getFirestore(app)
+  const storage = getStorage(app) // bucket comes from firebaseConfig.storageBucket
 
   // User info lives in the Pinia store (stores/auth.js).
   const authStore = useAuthStore(nuxtApp.$pinia)
@@ -45,6 +47,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     provide: {
       firebaseAuth: auth,
       db,
+      storage,
       authReady: () => authReady,
     },
   }

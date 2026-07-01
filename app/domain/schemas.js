@@ -359,3 +359,90 @@ export const chatThreadSchema = z.object({
 export function safeParse(schema, value) {
   return schema.safeParse(value)
 }
+
+// ── Reminders / Alerts ────────────────────────────────────────────────────────
+
+/** Integer epoch milliseconds (a precise instant). NET-NEW vs monthId/ISO dates. */
+export const epochMs = z.number().int().nonnegative()
+
+export const weekdayCode = z.enum(['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'])
+export const recurrenceFreq = z.enum(['NONE', 'HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])
+/** 'HH:MM' 24h local clock time (for sub-daily / multiple-per-day rules). */
+export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Expected HH:MM')
+
+// RRULE-lite. interval applies to the freq step; byWeekday EXPANDS for WEEKLY and
+// FILTERS for other freqs; byMonth/byMonthday FILTER/expand per freq (see calc).
+export const recurrenceSchema = z.object({
+  freq: recurrenceFreq.default('NONE'),
+  interval: z.number().int().min(1).default(1),
+  byWeekday: z.array(weekdayCode).default([]),
+  byMonthday: z.array(z.number().int().min(1).max(31)).default([]),
+  byMonth: z.array(z.number().int().min(1).max(12)).default([]),
+  times: z.array(hhmm).default([]),
+  endsAt: epochMs.nullable().default(null),   // no occurrences after this instant
+  count: z.number().int().min(1).nullable().default(null), // max number of fires
+})
+
+/** Complete RECURRENCE_NONE value — a frozen constant safe to spread as the form's
+ *  initial state (`{ ...RECURRENCE_NONE }`) or compare against. */
+export const RECURRENCE_NONE = Object.freeze({
+  freq: 'NONE', interval: 1, byWeekday: [], byMonthday: [], byMonth: [], times: [], endsAt: null, count: null,
+})
+
+/** Fresh, MUTABLE copy for use as the zod field default. vee-validate/zod's cast
+ *  deep-MERGES (mutates) the resolved default object, so the default MUST be a factory
+ *  returning a new non-frozen object — passing the frozen RECURRENCE_NONE directly throws
+ *  "Cannot assign to read only property 'freq'" inside useForm's resolveInitialValues. */
+const freshRecurrence = () => ({
+  freq: 'NONE', interval: 1, byWeekday: [], byMonthday: [], byMonth: [], times: [], endsAt: null, count: null,
+})
+
+export const attachmentSchema = z.object({
+  id: recordId,
+  name: z.string().trim().default(''),
+  path: z.string().trim().min(1),   // Storage path — the source of truth for cleanup
+  url: z.string().trim().default(''), // download URL — display convenience only
+  size: z.number().int().nonnegative().default(0),
+  contentType: z.string().trim().default(''),
+  createdAt: timestamp.optional(),
+})
+
+export const alertStatus = z.enum(['active', 'completed'])
+
+// INPUT (form-validated; repo stamps id/status/nextFireAt/timestamps).
+export const alertInputBase = z.object({
+  title: z.string().trim().min(1, 'Title is required'),
+  description: z.string().trim().optional().default(''),
+  fireAt: epochMs,                              // anchor instant ("when") — the user's pick
+  recurrence: recurrenceSchema.default(freshRecurrence), // factory: vee-validate mutates the resolved default
+  attachments: z.array(attachmentSchema).default(() => []),
+  enabled: z.boolean().default(true),
+  // Forward-compat for push v2 (owner-writable, unused in v1 delivery).
+  channels: z.object({
+    inApp: z.boolean().default(true),
+    push: z.boolean().default(false),
+    email: z.boolean().default(false),
+  }).default(() => ({ inApp: true, push: false, email: false })),
+  tz: z.string().trim().optional().default(''), // reserved; '' = device local
+})
+
+export const alertInputSchema = alertInputBase // the form schema
+
+export const alertSchema = alertInputBase.extend({
+  id: recordId,
+  status: alertStatus.default('active'),
+  // ALWAYS present — number while active/disabled, explicit null when completed.
+  // NEVER written as undefined / deleteField(): an absent field is silently
+  // EXCLUDED by orderBy('nextFireAt'); an explicit null is INCLUDED. (§4, §10)
+  nextFireAt: epochMs.nullable().default(null),
+  lastFiredAt: timestamp.nullable().optional(),
+  lastFiredOccurrenceMs: epochMs.nullable().default(null), // idempotency marker (§4 B2)
+  startedCount: z.number().int().nonnegative().default(0), // fires so far (enforces count)
+  snoozedUntil: epochMs.nullable().default(null),
+  readAt: timestamp.nullable().optional(),                 // drives the unread badge
+  completedAt: timestamp.nullable().optional(),
+  archived: z.boolean().default(false),                    // soft-delete
+  createdAt: timestamp.optional(),
+  updatedAt: timestamp.optional(),
+  archivedAt: timestamp.nullable().optional(),
+})

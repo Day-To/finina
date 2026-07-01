@@ -5,7 +5,7 @@
 import { ref, computed } from 'vue'
 import {
   HomeIcon, LandmarkIcon, NotebookPenIcon, CalendarDaysIcon, SettingsIcon,
-  PlusIcon, SunIcon, MoonIcon, LogOutIcon, TrendingUpIcon, LineChartIcon,
+  PlusIcon, SunIcon, MoonIcon, LogOutIcon, TrendingUpIcon, LineChartIcon, BellIcon,
 } from '@lucide/vue'
 import fLogo from '@/assets/f.png'
 import { currentMonthId } from '@/lib/dates.js'
@@ -16,6 +16,8 @@ const route = useRoute()
 const auth = useAuthStore()
 const { isDark, toggle: toggleTheme } = useTheme()
 const { ready, hasSettings, ensureCreated } = useSettings()
+// Reminders: unread badge count + shared notification-center open state.
+const { unreadCount, centerOpen } = useAlerts()
 
 const nav = [
   { to: '/', label: 'Home', icon: HomeIcon },
@@ -125,7 +127,10 @@ async function completeOnboarding() {
           class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
           :class="isActive(item.to) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'"
         >
-          <component :is="item.icon" class="size-4" />
+          <span class="relative">
+            <component :is="item.icon" class="size-4" />
+            <UiBadge v-if="item.to === '/alerts' && unreadCount" class="absolute -right-2 -top-2 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none">{{ unreadCount }}</UiBadge>
+          </span>
           {{ item.label }}
         </NuxtLink>
       </nav>
@@ -135,6 +140,10 @@ async function completeOnboarding() {
             <p class="truncate text-xs font-medium">{{ auth.user?.email || 'Signed in' }}</p>
           </div>
           <div class="flex items-center gap-1">
+            <UiButton variant="ghost" size="icon" class="relative size-8" aria-label="Notifications" @click="centerOpen = true">
+              <BellIcon class="size-4" />
+              <UiBadge v-if="unreadCount" class="absolute -right-1 -top-1 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none">{{ unreadCount }}</UiBadge>
+            </UiButton>
             <UiButton variant="ghost" size="icon" class="size-8" aria-label="Toggle theme" @click="toggleTheme">
               <MoonIcon v-if="isDark" class="size-4" />
               <SunIcon v-else class="size-4" />
@@ -163,6 +172,10 @@ async function completeOnboarding() {
           </UiButton>
           <UiButton variant="ghost" size="icon" class="size-9" aria-label="Bank accounts" as-child>
             <NuxtLink to="/bank_accounts"><LandmarkIcon class="size-4" /></NuxtLink>
+          </UiButton>
+          <UiButton variant="ghost" size="icon" class="relative size-9" aria-label="Notifications" @click="centerOpen = true">
+            <BellIcon class="size-4" />
+            <UiBadge v-if="unreadCount" class="absolute right-1 top-1 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none">{{ unreadCount }}</UiBadge>
           </UiButton>
           <UiButton variant="ghost" size="icon" class="size-9" aria-label="Toggle theme" @click="toggleTheme">
             <MoonIcon v-if="isDark" class="size-4" />
@@ -220,5 +233,11 @@ async function completeOnboarding() {
 
     <!-- AI copilot: floating button + chat panel, available on every page. -->
     <Copilot v-if="auth.isAuthenticated" />
+
+    <!-- Reminders notification center (bell-triggered sheet). -->
+    <NotificationCenter v-if="auth.isAuthenticated" v-model:open="centerOpen" />
+
+    <!-- Prominent on-open reminder alert (modal). -->
+    <ReminderAlertDialog v-if="auth.isAuthenticated" />
   </div>
 </template>

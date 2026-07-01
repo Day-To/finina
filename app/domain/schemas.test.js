@@ -78,3 +78,55 @@ describe('investmentPlanVersionSchema', () => {
     expect(investmentPlanSchema.parse({ activeVersionId: 'x' }).activeVersionId).toBe('x')
   })
 })
+
+import { alertInputSchema, alertSchema, recurrenceSchema, RECURRENCE_NONE } from './schemas.js'
+
+describe('recurrenceSchema', () => {
+  it('applies NONE defaults from {}', () => {
+    expect(recurrenceSchema.parse({})).toEqual(RECURRENCE_NONE)
+  })
+  it('accepts every named combo shape', () => {
+    expect(recurrenceSchema.safeParse({ freq: 'YEARLY', byMonth: [1, 7] }).success).toBe(true)          // twice a year
+    expect(recurrenceSchema.safeParse({ freq: 'DAILY', times: ['09:00', '21:00'] }).success).toBe(true) // twice a day
+    expect(recurrenceSchema.safeParse({ freq: 'MONTHLY', interval: 3 }).success).toBe(true)             // once a quarter
+    expect(recurrenceSchema.safeParse({ freq: 'HOURLY', interval: 1 }).success).toBe(true)              // once an hour
+    expect(recurrenceSchema.safeParse({ freq: 'WEEKLY', byWeekday: ['SU'] }).success).toBe(true)        // only Sundays
+    expect(recurrenceSchema.safeParse({ freq: 'WEEKLY', byWeekday: ['SU', 'MO', 'FR'] }).success).toBe(true)
+  })
+  it('rejects bad HH:MM and weekday', () => {
+    expect(recurrenceSchema.safeParse({ freq: 'DAILY', times: ['9:00'] }).success).toBe(false)
+    expect(recurrenceSchema.safeParse({ freq: 'WEEKLY', byWeekday: ['SUN'] }).success).toBe(false)
+  })
+})
+
+describe('alert schemas', () => {
+  it('input applies defaults', () => {
+    const r = alertInputSchema.parse({ title: 'Pay rent', fireAt: 1_900_000_000_000 })
+    expect(r.recurrence).toEqual(RECURRENCE_NONE)
+    expect(r.attachments).toEqual([])
+    expect(r.enabled).toBe(true)
+  })
+  it('requires title + fireAt', () => {
+    expect(alertInputSchema.safeParse({ fireAt: 1 }).success).toBe(false)
+    expect(alertInputSchema.safeParse({ title: 'x' }).success).toBe(false)
+  })
+  it('entity defaults nextFireAt to null (present, never undefined)', () => {
+    const r = alertSchema.parse({ id: 'a', title: 'x', fireAt: 1 })
+    expect(r.nextFireAt).toBe(null)
+    expect(r.status).toBe('active')
+    expect(r.startedCount).toBe(0)
+  })
+  it('recurrence/channels defaults are fresh mutable objects (vee-validate cast safety)', () => {
+    // vee-validate/zod cast() deep-merges (mutates) resolved defaults, so a frozen or
+    // shared default reference crashes useForm ("Cannot assign to read only property").
+    const a = alertInputSchema.parse({ title: 'x', fireAt: 1 })
+    const b = alertInputSchema.parse({ title: 'y', fireAt: 2 })
+    expect(a.recurrence).not.toBe(b.recurrence)
+    expect(Object.isFrozen(a.recurrence)).toBe(false)
+    expect(a.channels).not.toBe(b.channels)
+    a.recurrence.freq = 'DAILY'
+    a.recurrence.byWeekday.push('SU')
+    expect(b.recurrence.freq).toBe('NONE') // no shared-state bleed
+    expect(b.recurrence.byWeekday).toEqual([])
+  })
+})
